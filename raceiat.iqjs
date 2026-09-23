@@ -1,0 +1,63 @@
+<userManual>
+___________________________________________________________________________________________________________________	
+
+						Race Implicit Association Test (IAT) - with pictures
+___________________________________________________________________________________________________________________
+
+Script Author: Sean Draine (seandr@millisecond.com)
+Last Updated:  11-25-2025 by K. Borchert (katjab@millisecond.com), Millisecond
+
+Script Copyright © 11-25-2025 Millisecond Software, LLC
+___________________________________________________________________________________________________________________
+TASK VERSION
+___________________________________________________________________________________________________________________
+
+Language: English
+___________________________________________________________________________________________________________________
+BACKGROUND INFO 
+___________________________________________________________________________________________________________________							
+
+The Implicit Association Task (Greenwald, McGhee, & Schwartz, 1998) is a widely-used cognitive-behavioral paradigm
+that measures the strength of automatic (implicit) associations between concepts in people’s minds relying 
+on latency measures in a simple sorting task.
+										
+This IAT measures the strength of automatic (implicit) associations between 
+the target categories (White vs. Black) and attribute categories (Good/Bad).
+The main Dependent Variable is the D-Score ('Difference Score'). 
+							
+//D-Score Interpretation							
+
+D-scores obtained with this script:
+Positive d-scores: support a stronger association between 'White American-Good' and 'Black American-Bad' than for the opposite pairings
+Negative d-scores: support a stronger association between 'Black American-Good' and 'White American-Bad' than for the opposite pairings
+																														
+</userManual>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	MAIN CODE: in script "iat_inc.iqjs"
+**************************************************************************************************************
+**************************************************************************************************************
+
+<include>
+/ file = "pictureiat_inc.iqjs"//this script contains the main script code that is run by all language/iat versions
+</include>
+
+**************************************************************************************************************
+**************************************************************************************************************
+									IAT/LANGUAGE SPECIFIC CODE:
+**************************************************************************************************************
+**************************************************************************************************************
+
+<include>
+/ file = "raceiat_stimuli_inc.iqjs" //this script contains the stimuli specific to the raceiat
+</include>
+
+<include>
+/ file = "pictureiat_instructions_inc.iqjs" //this script contains the generic pictureIAT instructions
+</include>
+
+
+**************************************************************************************************************
+                                             END OF FILE
+**************************************************************************************************************

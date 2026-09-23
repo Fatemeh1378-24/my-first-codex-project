@@ -1,0 +1,139 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+HELPER SCRIPT: contains the generic instructions for Inquisit IATs using English text & picture stimuli
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE INSTRUCTIONS: change instructions here
+**************************************************************************************************************
+**************************************************************************************************************
+<instruct>
+/ navigationButtonFontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+</instruct>
+
+<item instructions>
+/ 1 = "Put your left finger on the 'E' response key for items that belong to the category '<%expressions.leftTarget%>'.
+Put your right finger on the 'I' response key for items that belong to the category '<%expressions.rightTarget%>'.
+\nItems will appear one-by-one in the middle of the screen.
+\nIf you make an error, a red X will appear - to continue, press the other response key.
+\nGo as fast as you can while making as few errors as possible."
+
+/ 2 = "Put your left finger on the 'E' response key for items that belong to the category '<%item.attributeALabel.item(0)%>'.
+Put your right finger on the 'I' response key for items that belong to the category '<%item.attributeBLabel.item(0)%>'.
+\nIf you make an error, a red X will appear - to continue, press the other response key.
+\nGo as fast as you can while making as few errors as possible."
+
+/ 3 = "Press the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.leftTarget%>'.
+Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.rightTarget%>'.
+\nEach item belongs to only one category.
+\nIf you make an error, a red X will appear - to continue, press the other response key.
+\nGo as fast as you can while making as few errors as possible."
+
+/ 4 = "This is the same task as the previous one.
+\n\nPress the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.leftTarget%>'.
+Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.rightTarget%>'.
+\nEach item belongs to only one category.
+\nGo as fast as you can while making as few errors as possible."
+
+/ 5 = "Attention! The labels have changed sides.
+\nPress the left 'E' key for '<%expressions.rightTarget%>'.
+Press the right 'I' key for '<%expressions.leftTarget%>'.
+\nGo as fast as you can while making as few errors as possible."
+
+/ 6 = "Press the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.rightTarget%>'.
+Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.leftTarget%>'.
+\nIf you make an error, a red X will appear - to continue, press the other response key.
+\nGo as fast as you can while making as few errors as possible."
+
+/ 7 = "This is the same task as the previous one.
+\nPress the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.rightTarget%>'.
+Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.leftTarget%>'
+\nEach item belongs to only one category.
+\nGo as fast as you can while making as few errors as possible."
+</item>
+
+Note: expressions used to assign the correct label to the left and right response keys
+<expressions>
+/ leftTarget = if(values.conditionOrder == "c-ic"){
+	return item.targetALabel.item(0);
+} else {
+	return item.targetBLabel.item(0);
+}
+/ rightTarget = if (values.conditionOrder == "c-ic"){
+	return item.targetBLabel.item(0);
+} else {
+	return item.targetALabel.item(0);
+}
+</expressions>
+
+<text orLeft>
+/ items = ("or")
+/ vAlign = top
+/ hAlign = left
+/ position = (5%, 12%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text orRight>
+/ items = ("or")
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 12%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text spacebar>
+/ items = ("Press the SPACE BAR to begin.")
+/ position = (50%, 90%)
+/ vAlign = bottom
+</text>
+
+<text errorReminder>
+/ items = ("If you make an error, a red X will appear. Press the other key to continue.")
+/ position = (50%, 95%)
+/ vAlign = bottom
+/ fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
+/ txColor = gray
+/ erase = false
+</text>
+
+***********************************************************************
+Performance summary
+***********************************************************************
+
+<trial summary>
+/ onTrialBegin = {
+	values.magnitude = "little to no";
+	if( abs(expressions.d) > 0.15 ) values.magnitude = "a slight";
+	if( abs(expressions.d) > 0.35 ) values.magnitude = "a moderate";
+	if( abs(expressions.d) >= 0.65 ) values.magnitude = "a strong";
+	if (expressions.d >= 0.0)
+		values.preferred = item.targetALabel.item(0);
+	if (expressions.d < 0.0)
+		values.preferred = item.targetBLabel.item(0);
+	if (expressions.d < 0.0)
+		values.notPreferred= item.targetALabel.item(0);
+	if (expressions.d >= 0.0)
+		values.notPreferred= item.targetBLabel.item(0);
+}
+/ stimulusTimes = [0=summary]
+/ validResponse = (" ")
+/ recordData = false
+</trial>
+
+
+<text summary>
+/ items = ("Your IAT score (D) was <% expressions.d %>, which suggests <% values.magnitude %> automatic preference to associate:
+
+
+* '<% values.preferred %>' with '<%item.attributeALabel.item(0)%>' rather than with '<%item.attributeBLabel.item(0)%>'
+ 
+* '<% values.notPreferred %>' with '<%item.attributeBLabel.item(0)%>' rather than with '<%item.attributeALabel.item(0)%>'.
+\n\n\nPress the spacebar to complete this session.") 
+/ size = (60%, 60%)
+/ hJustify = left
+ </text>
+
+**************************************************************************************************************
+												End of File
+**************************************************************************************************************

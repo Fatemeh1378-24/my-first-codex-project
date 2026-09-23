@@ -1,0 +1,827 @@
+<userManual>
+___________________________________________________________________________________________________________________	
+
+					Implicit Association Test (IAT) - IAT template with pictures				
+___________________________________________________________________________________________________________________
+
+Script Author: Sean Draine (seandr@millisecond.com)
+Last Updated:  11-25-2025 by K. Borchert (katjab@millisecond.com), Millisecond
+
+Script Copyright © 11-25-2025 Millisecond Software, LLC
+
+___________________________________________________________________________________________________________________
+BACKGROUND INFO 	
+___________________________________________________________________________________________________________________
+
+The Implicit Association Task (Greenwald, McGhee, & Schwartz, 1998) is a widely-used cognitive-behavioral paradigm
+that measures the strength of automatic (implicit) associations between concepts in people’s minds relying 
+on latency measures in a simple sorting task.
+ 
+The strength of an association between concepts is measured by the standardized mean difference score of 
+the 'hypothesis-inconsistent' pairings and 'hypothesis-consistent' pairings (d-score) (Greenwald, Nosek, & Banaji, 2003). 
+In general, the higher the d-score the stronger is the association between the 'hypothesis-consistent' pairings 
+(decided by researchers). Negative d-scores suggest a stronger association between the 'hypothesis-inconsistent' pairings.
+
+Inquisit calculates d-scores using the improved scoring algorithm as described in Greenwald et al (2003). 
+Error trials are handled by requiring respondents to correct their responses according to recommendation (p.214).
+
+___________________________________________________________________________________________________________________
+REFERENCES	
+___________________________________________________________________________________________________________________
+
+Greenwald, A. G., McGhee, D. E., & Schwartz, J. K. L. (1998). Measuring individual differences in implicit cognition: 
+The Implicit Association Test. Journal of Personality and Social Psychology, 74, 1464-1480.
+
+Greenwald, A. G., Nosek, B. A., & Banaji, M. R. (2003). Understanding and Using the Implicit Association Test: 
+I. An Improved Scoring Algorithm. Journal of Personality and Social Psychology, 85, 197-216.
+
+___________________________________________________________________________________________________________________
+TASK DESCRIPTION	
+___________________________________________________________________________________________________________________
+
+Participants are asked to categorize attributes (e.g. "joyful"; "tragic") and and target items (e.g "daisy" vs. "wasp")
+into predetermined categories via keystroke presses. The basic task is to press a left key (E) if an item (e.g. "joyful")
+belongs to the category presented on the left (e.g. "Good") and to press the right key (I) if the word (e.g. "tragic") 
+belongs to the category ("Bad") presented on the right.
+For practice, participants sort items into the target categories "Flowers vs. Insects" and the attribute categories "Good vs. Bad".
+For the test, participants are asked to sort categories into the paired/combined categories (e.g. 
+"Flower OR Good" on the left vs. "Insect OR Bad" on the right). Pairings are reversed for a second test 
+(e.g. "Insects OR Good" on the left vs. "Flowers OR Bad" on the right). Block order is counterbalanced by groupnumber.							  
+
+___________________________________________________________________________________________________________________	
+DURATION 
+___________________________________________________________________________________________________________________	
+5.5 minutes
+
+___________________________________________________________________________________________________________________	
+DATA OUTPUT DICTIONARY
+___________________________________________________________________________________________________________________	
+
+(1) Raw data file: 'pictureiat_raw*.iqdat'
+
+build:							The specific Inquisit version used (the 'build') that was run
+computer.platform:				the platform the script was run on (win/mac/ios/android)
+computer.touch:					0 = device has no touchscreen capabilities; 1 = device has touchscreen capabilities
+computer.hasKeyboard:			0 = no external keyboard detected; 1 = external keyboard detected
+date:							date script was run 
+time: 							(local) time script was run
+
+subject:						with the current subject id 
+group: 							with the current groupnumber
+										Note: odd/even groupnumbers balance the order in which 
+										hypothesis-compatible/incompatible blocks are run
+										odd = compatible - incompatible
+										even = incompatible - compatible
+										
+session:						with the current session id
+
+blockcode:						the name the current block (built-in Inquisit variable) 
+blocknum:						the number of the current block (built-in Inquisit variable)
+trialcode: 						the name of the currently recorded trial (built-in Inquisit variable)
+trialnum: 						the number of the currently recorded trial (built-in Inquisit variable)
+									Note: trialnum is a built-in Inquisit variable; it counts all trials run;  
+									even those that do not store data to the data file.
+									
+conditionOrder:					c-ic: consistent -> inconsistent
+								ic-c: inconsistent -> consistent									
+									
+response:						the response key pressed (e.g. 18=E or 23=I)										
+								Note: script saves the final and -by design- correct response for each trial
+								
+responseText:					the label of the response key (E vs I)								
+										
+correct:						the accuracy of the initial response
+										0 = initial response was incorrect and needed to be corrected
+										1 = initial response is correct
+										
+latency:						the latency of the final (correct) response in ms; measured from onset of stim
+stimulusNumber:					the number of the current stimulus
+stimulusItem:					the currently presented item
+
+
+da:								d-score of the first short blocks (Only meaningful for the last row of data in the raw data file - upon completion of IAT)
+db:								d-score of the second long blocks (Only meaningful for the last row of data in the raw data file - upon completion of IAT)
+
+d:								overall d-score (non-weighted mean of the 2 d-scores); main DV (Only meaningful for the last row of data in the raw data file - upon completion of IAT)
+
+								Suggested Interpretation:
+
+											D-score <= -0.65 => "a strong" preference for hypothesis-NONconforming pairings
+											D-score < -0.35 => "a moderate" preference for hypothesis-NONconforming pairings
+											D-score < -0.15 => "a slight" preference for hypothesis-NONforming pairings																						
+											-0.15 <= D-score <= 0.15 "little to no" preference
+											D-score > 0.15 => "a slight" preference for hypothesis-conforming pairings
+											D-score > 0.35 => "a moderate" preference for hypothesis-conforming pairings
+											D-score >= 0.65 => "a strong" preference for hypothesis-conforming pairings
+
+percentCorrect:      			the overall percent correct score of initial responses in test trials of D-score qualifying latencies (Only meaningful for the last row of data in the raw data file - upon completion of IAT)
+
+propRT300:						the proportion of response latencies < 300ms (Only meaningful for the last row of data in the raw data file - upon completion of IAT)
+
+excludeCriteriaMet:				1 = yes, exclusion supported per Greenwald et al (2003, p.214, Table 4): (Only meaningful for the last row of data in the raw data file - upon completion of IAT)
+								More than 10% of all response latencies are faster than 300ms
+								0 = otherwise
+									
+
+(2) Summary data file: 'pictureiat_summary*.iqdat'
+
+inquisit.version:				Inquisit version run
+computer.platform:				the platform the script was run on (win/mac/ios/android)
+computer.touch:					0 = device has no touchscreen capabilities; 1 = device has touchscreen capabilities
+computer.hasKeyboard:			0 = no external keyboard detected; 1 = external keyboard detected
+startDate:						date script was run
+startTime:						time script was started
+subjectId:						assigned subject id number
+groupId:						assigned group id number
+sessionId:						assigned session id number
+elapsedTime:					time it took to run script (in ms); measured from onset to offset of script
+completed:						0 = script was not completed (prematurely aborted); 
+								1 = script was completed (all conditions run)
+								
+conditionOrder:					c-ic: consistent -> inconsistent
+								ic-c: inconsistent -> consistent								
+
+da:								d-score of the first short blocks
+db:								d-score of the second long blocks
+
+d:								overall d-score (non-weighted mean of the 2 d-scores); main DV
+
+								Suggested Interpretation:
+
+											D-score <= -0.65 => "a strong" preference for hypothesis-NONconforming pairings
+											D-score < -0.35 => "a moderate" preference for hypothesis-NONconforming pairings
+											D-score < -0.15 => "a slight" preference for hypothesis-NONforming pairings																						
+											-0.15 <= D-score <= 0.15 "little to no" preference
+											D-score > 0.15 => "a slight" preference for hypothesis-conforming pairings
+											D-score > 0.35 => "a moderate" preference for hypothesis-conforming pairings
+											D-score >= 0.65 => "a strong" preference for hypothesis-conforming pairings
+
+percentCorrect:    				the overall percent correct score of initial responses in test trials of D-score qualifying latencies
+
+propRT300:						the proportion of response latencies < 300ms
+
+excludeCriteriaMet:				1 = yes, exclusion supported per Greenwald et al (2003, p.214, Table 4):
+								More than 10% of all response latencies are faster than 300ms
+								0 = otherwise
+									
+___________________________________________________________________________________________________________________	
+EXPERIMENTAL SET-UP 
+___________________________________________________________________________________________________________________	
+
+Hypothesis-consistent pairings vs. hypothesis-inconsistent pairings; tested within-subjects in a blocked format
+=> order is counterbalanced by groupnumber assignment
+odd groupnumbers run: consistent - inconconsistent pairings
+even groupnumbers run: inconsistent - consistent pairings
+
+Block Sequence:
+1. Target Category sorting training
+2. Attribute sorting training
+3. 1. Test Block of hypothesis-consistent* pairings with 20 trials (half the participant start with inconsistent pairings)
+4. 2. Test Block of hypothesis-consistent pairings with 40 trials
+5. Target Category sorting training with targets switching sides
+6. 1. Test Block of hypothesis-inconsistent pairings with 20 trials
+7. 2. Test Block of hypothesis-inconsistent pairings with 40 trials
+
+In all Test Blocks:
+* attributes and targets alternate
+* attributes as well as targets are randomly selected without replacement
+
+Trial Sequence:
+Target -> until correct response -> ISI: 250ms (default)-> Target....
+
+
+___________________________________________________________________________________________________________________	
+INSTRUCTIONS
+___________________________________________________________________________________________________________________
+
+- iat dependent code can be found in script file "xxxiat_stimuli_inc.iqjs" (xxx=specific iat)
+- generic instructions can be found in in script file "pictureiat_instructions_inc.iqjs" (language dependent)
+
+In general:
+* start instruction page is provided as an html page. It automatically adapts to different images and category labels UNLESS
+the number of attributes and/or targets have been changed. In this case, changes have to be 
+made to file "intro_iat.htm", so that the correct number of items are presented in the overview table.
+
+Example: instead of 8 words for target A, only 5 should be presented:
+
+in file "intro_iat.htm":
+change:
+			<td><%item.targetA.item(0)%>, <%item.targetA.item(1)%>, <%item.targetA.item(2)%>, <%item.targetA.item(3)%>, 
+				<%item.targetA.item(4)%>, <%item.targetA.item(5)%>, <%item.targetA.item(6)%>, <%item.targetA.item(7)%>
+			</td>
+
+To:
+			<td><%item.targetA.item(0)%>, <%item.targetA.item(1)%>, <%item.targetA.item(2)%>, <%item.targetA.item(3)%>, 
+				<%item.targetA.item(4)%>
+			</td>
+
+* The instructions adapt automatically if different attributes and targets are used.
+
+___________________________________________________________________________________________________________________	
+EDITABLE CODE 
+___________________________________________________________________________________________________________________	
+
+/ showSummaryFeedback = true:		set parameter showsummaryfeedback = true to display summary feedback to participants at the end
+									set parameter showsummaryfeedback = false if no summary feedback should be presented to participants
+							
+/ isi = 250:						interstimulus interval (in ms)
+
+</userManual>
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE PARAMETERS: change editable parameters here
+**************************************************************************************************************
+**************************************************************************************************************
+
+<parameters>
+/ showSummaryFeedback = true	//set parameter showsummaryfeedback = true to display summary feedback to participants at the end
+								//set parameter showsummaryfeedback = false if no summary feedback should be presented to participants
+								
+/ isi = 250						//interstimulus interval (in ms)
+</parameters>
+
+**************************************************************************************************************
+								!!!REMAINING CODE: Customize after careful consideration only!!!
+**************************************************************************************************************
+
+**************************************************************************************************************
+**************************************************************************************************************
+	DEFAULTS
+**************************************************************************************************************
+**************************************************************************************************************
+script requires Inquisit "7.0.8.0" or higher
+
+<defaults>
+/ fontStyle = ("Arial", 3.5%, false, false, false, false, 5, 1)
+/ screenColor = black
+/ txBGColor = black
+/ txColor = white
+/ minimumVersion = "7.0.8.0"
+/ canvasAspectRatio = (4, 3)
+</defaults>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	DATA
+**************************************************************************************************************
+**************************************************************************************************************
+
+Note: data file explanations under User Manual Information at the top
+
+***********************
+raw data file
+***********************
+<data>
+/ columns = (build, computer.platform, computer.touch, computer.hasKeyboard, date, time, subject, group, session, blockCode, blockNum, 
+trialCode, trialNum, values.conditionOrder,
+response, correct, latency, 
+stimulusnumber, stimulusitem, 
+expressions.da, expressions.db, expressions.d, expressions.percentCorrect, 
+expressions.propRT300, expressions.excludeCriteriaMet)
+</data>
+
+****************
+summary data
+****************
+
+<summaryData>
+/ columns = (inquisit.version, computer.platform, computer.touch, computer.hasKeyboard, script.startDate, script.startTime, 
+script.subjectId, script.groupId, script.sessionId, script.elapsedTime, 
+script.completed, values.conditionOrder,
+expressions.da, expressions.db, expressions.d, expressions.percentCorrect, 
+expressions.propRT300, expressions.excludeCriteriaMet)
+</summaryData>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	VALUES: automatically updated
+**************************************************************************************************************
+**************************************************************************************************************
+
+<values>
+/ magnitude = "unknown"
+/ preferred = "unknown"
+/ notPreferred = "unknown"
+/ progressWidth = 0
+/ instructionIndex = -1
+/ conditionOrder = ""
+</values>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EXPRESSIONS
+**************************************************************************************************************
+**************************************************************************************************************
+
+* 1 is compatible, 2 is incompatible
+* a is first block, b is second block
+
+/ m1a:					mean latencies of correct responses in first compatible block (short block)
+/ sd1a:					standard deviation of latencies of correct responses in first compatible block (short block)
+
+/ m2a:					mean latencies of correct responses in first incompatible block (short block)
+/ sd2a					standard deviation of latencies of correct responses in first incompatible block (short block)
+
+/ m1b:					mean latencies of correct responses in second compatible block (long block)
+/ sd1b:					standard deviation of latencies of correct responses in second compatible block (long block)
+
+/ m2b:					mean latencies of correct responses in second incompatible block (long block)
+/ sd2b:					standard deviation of latencies of correct responses in second incompatible block (long block)
+
+/ sda					pooled standarddeviation of latencies in first block (short block)
+/ sdb 					pooled standarddeviation of latencies in second block (long block)
+
+/ da:					D-score for first blocks		
+/ db:					D-score for second blocks
+
+/ d:					overall D-score (non-weighted mean of the d-scores from the short and long block)
+
+/ percentcorrect:       calculates the overall percent correct score of initial responses of test trials of D-score qualifying latencies
+/ progress:				sets the length of the progress bar to %
+
+<expressions>
+/ m1A = return list.rtCompatible1.mean
+/ sd1A = return list.rtCompatible1.standardDeviation
+/ m1B = return list.rtCompatible2.mean
+/ sd1B = return list.rtCompatible2.standardDeviation
+/ m2A = return list.rtIncompatible1.mean
+/ sd2A = return list.rtIncompatible1.standardDeviation
+/ m2B = return list.rtIncompatible2.mean
+/ sd2B = return list.rtIncompatible2.standardDeviation
+/ sda = return list.rtBlock1.standardDeviation
+/ sdb = return list.rtBlock2.standardDeviation
+/ da = return ((expressions.m2A - expressions.m1A) / expressions.sda)
+/ db = return ((expressions.m2B - expressions.m1B) / expressions.sdb)
+/ d = return ((expressions.da + expressions.db) / 2)
+
+/ percentCorrect = return (list.acc.mean*100)
+/ progress = return pct(values.progressWidth)
+/ propRT300 = return list.rt300.mean
+/ excludeCriteriaMet = if (expressions.propRT300 > 0.1){
+	return 1;
+} else {
+	return 0;
+}
+</expressions>
+
+//stores qualifying response times from short compatible block 
+<list rtCompatible1>
+</list>
+
+//stores qualifying response times from long compatible block 
+<list rtCompatible2>
+</list>
+
+//stores qualifying response times from short incompatible block 
+<list rtIncompatible1>
+</list>
+
+//stores qualifying response times from long incompatible block 
+<list rtIncompatible2>
+</list>
+
+//stores qualifying response times from short block (pooled)
+<list rtBlock1>
+</list>
+
+//stores qualifying response times from long block (pooled)
+<list rtBlock2>
+</list>
+
+//stores accuracy of D-score qualifying responses
+<list acc>
+</list>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	INSTRUCTIONS
+**************************************************************************************************************
+**************************************************************************************************************
+
+<text instructions>
+/ items = instructions
+/ position = (10%, 25%)
+/ hAlign = left
+/ vAlign = top
+/ hJustify = left
+/ vJustify = center
+/ size = (80%, 50%)
+/ select = values.instructionIndex
+</text>
+
+<trial instructions>
+/ onTrialBegin = {
+	values.progressWidth+= 10;
+	values.instructionIndex++;
+}
+/ stimulusTimes = [1=instructions, spacebar, progressbar, progressbarFill]
+/ correctResponse = (" ")
+/ errorMessage = false
+/ recordData = false
+/ showMouseCursor = true
+</trial>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	STIMULI
+**************************************************************************************************************
+**************************************************************************************************************
+
+<shape progressbar>
+/ shape = rectangle
+/ size = (70%, 2%)
+/ color = gray
+/ position = (15%, 95%)
+/ hAlign = left
+/ vAlign = top
+</shape>
+
+<shape progressbarFill>
+/ shape = rectangle
+/ size = (expressions.progress, 2%)
+/ color = green
+/ position = (15%, 95%)
+/ hAlign = left
+/ vAlign = top
+</shape>
+
+<text attributeA>
+/ items = attributeA
+/ fontStyle = ("Arial", 5%)
+/ txColor = green
+</text>
+
+<text attributeB>
+/ items = attributeB
+/ fontStyle = ("Arial", 5%)
+/ txColor = green
+</text>
+
+<picture targetB>
+/ items = targetB
+/ size = (20%, 20%)
+</picture>
+
+<picture targetA>
+/ items = targetA
+/ size = (20%, 20%)
+</picture>
+
+<text error>
+/ position = (50%, 75%)
+/ items = ("X")
+/ color = red
+/ fontStyle = ("Arial", 10%, true)
+</text>
+
+<text attributeALeft>
+/ items = attributeALabel
+/ vAlign = top
+/ hAlign = left
+/ position = (5%, 5%)
+/ txColor = green
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text attributeBRight>
+/ items = attributeBLabel
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 5%)
+/ txColor = green
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetBLeft>
+/ items = targetBLabel
+/ vAlign = top
+/ hAlign = left	
+/ position = (5%, 5%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetBRight>
+/ items = targetBLabel
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 5%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetBLeftMixed>
+/ items = targetBLabel
+/ vAlign = top
+/ hAlign = left
+/ position = (5%, 19%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetBRightMixed>
+/ items = targetBLabel
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 19%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetALeft>
+/ items = targetALabel
+/ vAlign = top
+/ hAlign = left
+/ position = (5%, 5%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetARight>
+/ items = targetALabel
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 5%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetALeftMixed>
+/ items = targetALabel
+/ vAlign = top
+/ hAlign = left
+/ position = (5%, 19%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+<text targetARightMixed>
+/ items = targetALabel
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 19%)
+/ fontStyle = ("Arial", 5%)
+</text>
+
+
+**************************************************************************************************************
+**************************************************************************************************************
+	LISTS	
+**************************************************************************************************************
+**************************************************************************************************************
+
+*************************************************
+Data Lists: used for descriptive statistics
+store correct latencies/accuracy data
+fill up during runtime
+*************************************************
+
+Note: list stores 1 for latencies < 300ms (0 otherwise)
+<list rt300>
+</list>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	TRIALS 	
+**************************************************************************************************************
+**************************************************************************************************************
+
+<trial attributeA>
+/ validResponse = ("E", "I")
+/ correctResponse = ("E")
+/ stimulusFrames = [1 = attributeA, errorReminder]
+/ postTrialPause = parameters.isi
+</trial>
+
+<trial attributeB>
+/ validResponse = ("E", "I")
+/ correctResponse = ("I")
+/ stimulusFrames = [1 = attributeB, errorReminder]
+/ postTrialPause = parameters.isi
+</trial>
+
+<trial targetBLeft>
+/ validResponse = ("E", "I")
+/ correctResponse = ("E")
+/ stimulusFrames = [1 = targetB, errorReminder]
+/ postTrialPause = parameters.isi
+</trial>
+
+<trial targetBRight>
+/ validResponse = ("E", "I")
+/ correctResponse = ("I")
+/ stimulusFrames = [1 = targetB, errorReminder]
+/ postTrialPause = parameters.isi
+</trial>
+
+<trial targetALeft>
+/ validResponse = ("E", "I")
+/ correctResponse = ("E")
+/ stimulusFrames = [1 = targetA, errorReminder]
+/ postTrialPause = parameters.isi
+</trial>
+
+<trial targetARight>
+/ validResponse = ("E", "I")
+/ correctResponse = ("I")
+/ stimulusFrames = [1 = targetA, errorReminder]
+/ postTrialPause = parameters.isi
+</trial>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	BLOCKS
+**************************************************************************************************************
+**************************************************************************************************************
+
+<script>
+//tempThis: currentTrial object
+//compatibleLabel: string ("Compatible" vs "Incompatible")
+//blockNumber: integer (1 vs 2)
+//trialValidity: boolean (true vs. false; Note: should be false for the first trial for blocks with blocknumber 1)
+function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
+	if (tempThis.latency  <= 10000 && trialValidity) {
+		list["rt" + compatibleLabel + blockNumber].appendItem(tempThis.latency);
+		list["rtBlock" + blockNumber].appendItem(tempThis.latency);
+		list.acc.appendItem(tempThis.correct);		
+	}
+	if (tempThis.latency  < 300) {
+		list.rt300.appendItem(1);
+	} else {
+		list.rt300.appendItem(0);
+	}	
+}
+</script>
+
+<block attributePractice>
+/ bgStim = (attributeALeft, attributeBRight)
+/ trials = [
+	1=instructions;
+	2-21 = random(attributeA, attributeB);
+]
+/ errorMessage = true(error,200)
+/ response = correct
+</block>
+
+<block targetCompatiblePractice>
+/ bgStim = (targetALeft, targetBRight)
+/ trials = [
+	1=instructions;
+	2-21 = random(targetALeft, targetBRight);
+]
+/ errorMessage = true(error,200)
+/ response = correct
+</block>
+
+<block targetIncompatiblePractice>
+/ bgStim = (targetARight, targetBLeft)
+/ trials = [
+	1=instructions;
+	2-21 = random(targetARight, targetBLeft);
+]
+/ errorMessage = true(error,200)
+/ response = correct
+</block>
+
+<block targetCompatiblePracticeSwitch>
+/ bgStim = (targetALeft, targetBRight)
+/ trials = [
+	1=instructions;
+	2-41 = random(targetALeft, targetBRight);
+]
+/ errorMessage = true(error,200)
+/ response = correct
+</block>
+
+<block targetIncompatiblePracticeSwitch>
+/ bgStim = (targetARight, targetBLeft)
+/ trials = [
+	1=instructions;
+	2-41 = random(targetARight, targetBLeft);
+]
+/ errorMessage = true(error,200)
+/ response = correct
+</block>
+
+<block compatibleTest1>
+/ bgStim = (targetALeftMixed, orLeft, attributeALeft, targetBRightMixed, orRight, attributeBRight)
+/ trials = [
+	1=instructions;
+	3,5,7,9,11,13,15,17,19,21= random(targetALeft, targetBRight);
+	2,4,6,8,10,12,14,16,18,20 = random(attributeA, attributeB)]
+/ errorMessage = true(error,200)
+/ response = correct
+/ onTrialEnd = {
+	trialSummary(this, "Compatible", 1, (this.currentTrialNumber != 1));	
+}
+</block>
+
+<block compatibleTest2>
+/ bgStim = (targetALeftMixed, orLeft, attributeALeft, targetBRightMixed, orRight, attributeBRight)
+/ trials = [
+  2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40 = random(targetALeft, targetBRight);
+  1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39 = random(attributeA, attributeB)]
+/ errorMessage = true(error,200)
+/ response = correct
+/ onTrialEnd = {
+	trialSummary(this, "Compatible", 2, true);	
+}
+</block>
+
+<block incompatibleTest1>
+/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, targetARightMixed, orRight, attributeBRight)
+/ trials = [
+	1=instructions;
+	3,5,7,9,11,13,15,17,19,21 = random(targetBLeft, targetARight);
+	2,4,6,8,10,12,14,16,18,20 = random(attributeA, attributeB)]
+/ errorMessage = true(error,200)
+/ response = correct
+/ onTrialEnd = {
+	trialSummary(this, "Incompatible", 1, (this.currentTrialNumber != 1));	
+}
+</block>
+
+<block incompatibleTest2>
+/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, targetARightMixed, orRight, attributeBRight)
+/ trials = [
+  2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40 = random(targetBLeft, targetARight);
+  1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39 = random(attributeA, attributeB)]
+/ errorMessage = true(error,200)
+/ response = correct
+/ onTrialEnd = {
+	trialSummary(this, "Incompatible", 2, true);	
+}
+</block>
+
+<block compatibleTestInstructions>
+/ bgStim = (targetALeftMixed, orLeft, attributeALeft, targetBRightMixed, orRight, attributeBRight)
+/ trials = [1=instructions]
+/ recordData = false
+</block>
+
+<block incompatibleTestInstructions>
+/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, targetARightMixed, orRight, attributeBRight)
+/ trials = [1=instructions]
+/ recordData = false
+</block>
+
+<block summary>
+/ skip = {return (parameters.showSummaryFeedback == false)}
+/ trials = [1=summary]
+/ recordData = false
+</block>
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EXPERIMENT 
+**************************************************************************************************************
+**************************************************************************************************************
+Groupassignment is done by groupnumber
+
+<expt a>
+/ onExptBegin = {
+	values.conditionOrder = "c-ic";
+}
+/ preInstructions = (iatintro)
+/ groups = (1 of 2)
+/ blocks = [
+	1=targetCompatiblePractice; 
+	2=attributePractice; 
+	3=compatibleTest1; 
+	4=compatibleTestInstructions;
+	5=compatibleTest2; 
+	6=targetIncompatiblePractice; 
+	7=incompatibleTest1; 
+	8=incompatibleTestInstructions;
+	9=incompatibleTest2; 
+	10=summary;
+	]
+</expt>
+
+<expt b>
+/ onExptBegin = {
+	values.conditionOrder = "ic-c";
+}
+/ preInstructions = (iatintro)
+/ groups = (2 of 2)
+/ blocks = [
+	1=targetIncompatiblePractice; 
+	2=attributePractice; 
+	3=incompatibleTest1; 
+	4=incompatibleTestInstructions;
+	5=incompatibleTest2; 
+	6=targetCompatiblePractice; 
+	7=compatibleTest1; 
+	8=compatibleTestInstructions; 
+	9=compatibleTest2; 
+	10=summary;
+	]
+</expt>
+
+***********************************************************************
+Test Monkey
+***********************************************************************
+<monkey>
+/ latencyDistribution = normal(500, 100)
+/ percentCorrect = 90
+</monkey>
+
+
+**************************************************************************************************************
+												End of File
+**************************************************************************************************************

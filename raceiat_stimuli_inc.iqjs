@@ -1,0 +1,81 @@
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+HELPER SCRIPT: contains the stimuli for raceiat.iqjs
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+**************************************************************************************************************
+**************************************************************************************************************
+	EDITABLE STIMULI: change editable stimuli here
+**************************************************************************************************************
+**************************************************************************************************************
+This sample IAT can be easily adapted to different target categories 
+and attributes. To change the categories, you need only change the 
+stimulus items and labels immediately below this line.
+
+***********************************************************************
+<item attributeALabel>
+/ 1 = "Good"
+</item>
+
+<item attributeA>
+/ 1 = "Marvelous"
+/ 2 = "Superb"
+/ 3 = "Pleasure"
+/ 4 = "Beautiful"
+/ 5 = "Joyful"
+/ 6 = "Glorious"
+/ 7 = "Lovely"
+/ 8 = "Wonderful"
+</item>
+
+<item attributeBLabel>
+/ 1 = "Bad"
+</item>
+
+<item attributeB>
+/ 1 = "Tragic"
+/ 2 = "Horrible"
+/ 3 = "Agony"
+/ 4 = "Painful"
+/ 5 = "Terrible"
+/ 6 = "Awful"
+/ 7 = "Humiliate"
+/ 8 = "Nasty"
+</item>
+
+<item targetALabel>
+/ 1 = "White American"
+</item>
+
+<item targetA>
+/ 1 = "wf2_nc.jpg"
+/ 2 = "wf3_nc.jpg"
+/ 3 = "wf6_nc.jpg"
+/ 4 = "wm1_nc.jpg"
+/ 5 = "wm4_nc.jpg"
+/ 6 = "wm6_nc.jpg"
+</item>
+
+<item targetBLabel>
+/ 1 = "Black American"
+</item>
+
+<item targetB>
+/ 1 = "bf14_nc.jpg"
+/ 2 = "bf23_nc.jpg"
+/ 3 = "bf56_nc.jpg"
+/ 4 = "bm14_nc.jpg"
+/ 5 = "bm23_nc.jpg"
+/ 6 = "bm56_nc.jpg"
+</item>
+
+/////////////////////////////////
+IAT specific intro page
+/////////////////////////////////
+
+<htmlPage iatintro>
+/ file = "raceiat_intro.htm"
+</htmlPage>
+
+**************************************************************************************************************
+												End of File
+**************************************************************************************************************

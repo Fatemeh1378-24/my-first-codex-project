@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow"/>  
+<title>iat intro</title>
+<style>
+.center {
+	text-align: center;
+	}
+.left {	
+	text-align: left;
+	}
+body {
+    background-color: black;
+    font-family: arial;
+    color:white;	
+    font-size: 3.5vh;
+}
+h1 {
+    font-size: 5vh;
+}
+p {
+    font-size: 3.5vh;
+}
+p.bigger {
+    font-size: 4vh;
+}	
+li {
+    font-size: 3.5vh;
+}
+.blue {
+	color: blue;
+}	
+.yellow {
+	color: yellow;
+}
+.red {
+	color: red;
+}
+.green {
+	color: lightgreen;
+}
+table, th, td {
+    border: 0.5vh solid black;
+    border-collapse: collapse;	
+	border-color: white;
+}
+th, td {
+    padding: 1vh;
+}
+th {
+    text-align: left;
+}
+.firstrow {
+	background-color: gray;
+}
+</style>
+</head>
+
+<body>
+	<div class = "left">
+		<h1>Implicit Association Test</h1>
+		<p> In this task you will press the 'E' key (left response key) or the 'I' key (right response key) to categorize words and pictures into groups 
+		as fast as you can. Here are the four groups and the words and pictures that belong to them:</p>
+		
+		<table style="width:90%">
+		<tr>
+			<th class="firstrow">Category</th>
+			<th class="firstrow">Item</th> 
+		</tr>
+		
+		<tr class="green">
+			<td><%item.attributeALabel.item(0)%></td>
+			<td><%item.attributeA.item(0)%>, <%item.attributeA.item(1)%>, <%item.attributeA.item(2)%>, <%item.attributeA.item(3)%>, 
+				<%item.attributeA.item(4)%>, <%item.attributeA.item(5)%>, <%item.attributeA.item(6)%>, <%item.attributeA.item(7)%></td>
+		</tr>
+		
+		<tr class="green">
+			<td><%item.attributeBLabel.item(0)%></td>
+			<td><%item.attributeB.item(0)%>, <%item.attributeB.item(1)%>, <%item.attributeB.item(2)%>, <%item.attributeB.item(3)%>, 
+				<%item.attributeB.item(4)%>, <%item.attributeB.item(5)%>, <%item.attributeB.item(6)%>, <%item.attributeB.item(7)%></td>
+		</tr>
+		
+		<tr>
+			<td><%item.targetALabel.item(0)%></td>
+			<td><img src="<%item.targetA.item(0)%>" style="height: 7vh"/>&nbsp;&nbsp;&nbsp;<img src="<%item.targetA.item(1)%>" style="height: 7vh"/>&nbsp;&nbsp;&nbsp;
+				<img src="<%item.targetA.item(2)%>" style="height: 7vh"/>&nbsp;&nbsp;&nbsp;<img src="<%item.targetA.item(3)%>" style="height: 7vh"/>&nbsp;&nbsp;&nbsp;
+				<img src="<%item.targetA.item(4)%>" style="height: 7vh"/>&nbsp;&nbsp;&nbsp;<img src="<%item.targetA.item(5)%>" style="height: 7vh"/>&nbsp;&nbsp;&nbsp;
+				<img src="<%item.targetA.item(6)%>" style="height: 7vh"/>&nbsp;&nbsp;&nbsp;<img src="<%item.targetA.item(7)%>" style="height: 7vh"/>
+			</td>
+		</tr>
+  
+		<tr>
+			<td><%item.targetBLabel.item(0)%></td>
+			<td><img src="<%item.targetB.item(0)%>" style="height: 7vh">&nbsp;&nbsp;&nbsp;<img src="<%item.targetB.item(1)%>" style="height: 7vh">&nbsp;&nbsp;&nbsp;
+				<img src="<%item.targetB.item(2)%>" style="height: 7vh">&nbsp;&nbsp;&nbsp;<img src="<%item.targetB.item(3)%>" style="height: 7vh">&nbsp;&nbsp;&nbsp;
+				<img src="<%item.targetB.item(4)%>" style="height: 7vh">&nbsp;&nbsp;&nbsp;<img src="<%item.targetB.item(5)%>" style="height: 7vh">&nbsp;&nbsp;&nbsp;
+				<img src="<%item.targetB.item(6)%>" style="height: 7vh">&nbsp;&nbsp;&nbsp;<img src="<%item.targetB.item(7)%>" style="height: 7vh">
+			</td>
+		</tr>
+	</table><br>
+	<p>The task has 7 parts and the instructions change for each one. Pay attention!</p>
+	</div>
+
+
+</body>
+
+</html>
