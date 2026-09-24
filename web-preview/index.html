@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <title>Race IAT — Web Preview</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main id="app" class="app" aria-live="polite">
+      <section id="intro" class="panel intro">
+        <p class="eyebrow">Browser preview</p>
+        <h1>Implicit Association Test</h1>
+        <p>Sort words and pictures as quickly as you can while making as few errors as possible.</p>
+        <div id="category-overview" class="overview"></div>
+        <div class="notice">
+          <strong>How to respond</strong>
+          <span>Keyboard: <kbd>E</kbd> for left and <kbd>I</kbd> for right.</span>
+          <span>Touch: use the left and right buttons.</span>
+        </div>
+        <p class="fine-print">This is a local research preview. Results stay in this browser unless you download them.</p>
+        <button id="start-button" class="primary-button" type="button">Start the 7-part task</button>
+      </section>
+
+      <section id="task" class="task" hidden>
+        <header class="task-header">
+          <div><span id="part-label">Part 1 of 7</span><span id="trial-label" class="trial-label"></span></div>
+          <div class="progress-track" aria-hidden="true"><div id="progress-fill"></div></div>
+        </header>
+
+        <div class="stage">
+          <div id="left-category" class="category category-left"></div>
+          <div id="right-category" class="category category-right"></div>
+          <div id="instruction-card" class="instruction-card" hidden></div>
+          <div id="stimulus" class="stimulus" aria-label="Stimulus"></div>
+          <div id="error" class="error" role="alert" hidden>×</div>
+        </div>
+
+        <div id="response-controls" class="response-controls" hidden>
+          <button id="left-response" class="response-button" type="button"><span class="key">E</span><span>Left</span></button>
+          <button id="right-response" class="response-button" type="button"><span class="key">I</span><span>Right</span></button>
+        </div>
+        <p id="key-hint" class="key-hint">Press <kbd>E</kbd> for left or <kbd>I</kbd> for right</p>
+      </section>
+
+      <section id="summary" class="panel summary" hidden>
+        <p class="eyebrow">Preview complete</p>
+        <h1>Your results</h1>
+        <div class="score-card"><span>IAT D score</span><strong id="d-score">—</strong></div>
+        <p id="interpretation"></p>
+        <dl id="quality-metrics" class="metrics"></dl>
+        <div class="summary-actions">
+          <button id="download-button" class="primary-button" type="button">Download trial data</button>
+          <button id="restart-button" class="secondary-button" type="button">Run again</button>
+        </div>
+        <p class="fine-print">This browser preview is for testing and customization, not clinical or diagnostic use.</p>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
