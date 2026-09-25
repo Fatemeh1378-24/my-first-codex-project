@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-HELPER SCRIPT: contains the generic instructions for Inquisit IATs using English text & picture stimuli
+HELPER SCRIPT: contains the generic instructions for Inquisit IATs using Persian text & picture stimuli
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 **************************************************************************************************************
@@ -12,44 +12,44 @@ HELPER SCRIPT: contains the generic instructions for Inquisit IATs using English
 </instruct>
 
 <item instructions>
-/ 1 = "Put your left finger on the 'E' response key for items that belong to the category '<%expressions.leftTarget%>'.
-Put your right finger on the 'I' response key for items that belong to the category '<%expressions.rightTarget%>'.
-\nItems will appear one-by-one in the middle of the screen.
-\nIf you make an error, a red X will appear - to continue, press the other response key.
-\nGo as fast as you can while making as few errors as possible."
+/ 1 = "انگشت دست چپ خود را برای مواردی که به دستهٔ «<%expressions.leftTarget%>» تعلق دارند، روی کلید پاسخ «E» بگذارید.
+انگشت دست راست خود را برای مواردی که به دستهٔ «<%expressions.rightTarget%>» تعلق دارند، روی کلید پاسخ «I» بگذارید.
+\nموارد یکی‌یکی در وسط صفحه ظاهر می‌شوند.
+\nاگر اشتباه کنید، یک علامت X قرمز ظاهر می‌شود؛ برای ادامه، کلید پاسخ دیگر را فشار دهید.
+\nتا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید."
 
-/ 2 = "Put your left finger on the 'E' response key for items that belong to the category '<%item.attributeALabel.item(0)%>'.
-Put your right finger on the 'I' response key for items that belong to the category '<%item.attributeBLabel.item(0)%>'.
-\nIf you make an error, a red X will appear - to continue, press the other response key.
-\nGo as fast as you can while making as few errors as possible."
+/ 2 = "انگشت دست چپ خود را برای مواردی که به دستهٔ «<%item.attributeALabel.item(0)%>» تعلق دارند، روی کلید پاسخ «E» بگذارید.
+انگشت دست راست خود را برای مواردی که به دستهٔ «<%item.attributeBLabel.item(0)%>» تعلق دارند، روی کلید پاسخ «I» بگذارید.
+\nاگر اشتباه کنید، یک علامت X قرمز ظاهر می‌شود؛ برای ادامه، کلید پاسخ دیگر را فشار دهید.
+\nتا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید."
 
-/ 3 = "Press the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.leftTarget%>'.
-Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.rightTarget%>'.
-\nEach item belongs to only one category.
-\nIf you make an error, a red X will appear - to continue, press the other response key.
-\nGo as fast as you can while making as few errors as possible."
+/ 3 = "برای «<%item.attributeALabel.item(0)%>» و «<%expressions.leftTarget%>»، کلید سمت چپ «E» را فشار دهید.
+برای «<%item.attributeBLabel.item(0)%>» و «<%expressions.rightTarget%>»، کلید سمت راست «I» را فشار دهید.
+\nهر مورد فقط به یکی از دسته‌ها تعلق دارد.
+\nاگر اشتباه کنید، یک علامت X قرمز ظاهر می‌شود؛ برای ادامه، کلید پاسخ دیگر را فشار دهید.
+\nتا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید."
 
-/ 4 = "This is the same task as the previous one.
-\n\nPress the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.leftTarget%>'.
-Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.rightTarget%>'.
-\nEach item belongs to only one category.
-\nGo as fast as you can while making as few errors as possible."
+/ 4 = "این تکلیف همان تکلیف بخش قبلی است.
+\n\nبرای «<%item.attributeALabel.item(0)%>» و «<%expressions.leftTarget%>»، کلید سمت چپ «E» را فشار دهید.
+برای «<%item.attributeBLabel.item(0)%>» و «<%expressions.rightTarget%>»، کلید سمت راست «I» را فشار دهید.
+\nهر مورد فقط به یکی از دسته‌ها تعلق دارد.
+\nتا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید."
 
-/ 5 = "Attention! The labels have changed sides.
-\nPress the left 'E' key for '<%expressions.rightTarget%>'.
-Press the right 'I' key for '<%expressions.leftTarget%>'.
-\nGo as fast as you can while making as few errors as possible."
+/ 5 = "توجه! جای برچسب‌ها عوض شده است.
+\nبرای «<%expressions.rightTarget%>»، کلید سمت چپ «E» را فشار دهید.
+برای «<%expressions.leftTarget%>»، کلید سمت راست «I» را فشار دهید.
+\nتا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید."
 
-/ 6 = "Press the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.rightTarget%>'.
-Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.leftTarget%>'.
-\nIf you make an error, a red X will appear - to continue, press the other response key.
-\nGo as fast as you can while making as few errors as possible."
+/ 6 = "برای «<%item.attributeALabel.item(0)%>» و «<%expressions.rightTarget%>»، کلید سمت چپ «E» را فشار دهید.
+برای «<%item.attributeBLabel.item(0)%>» و «<%expressions.leftTarget%>»، کلید سمت راست «I» را فشار دهید.
+\nاگر اشتباه کنید، یک علامت X قرمز ظاهر می‌شود؛ برای ادامه، کلید پاسخ دیگر را فشار دهید.
+\nتا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید."
 
-/ 7 = "This is the same task as the previous one.
-\nPress the left 'E' key for '<%item.attributeALabel.item(0)%>' and '<%expressions.rightTarget%>'.
-Press the right 'I' key for '<%item.attributeBLabel.item(0)%>' and '<%expressions.leftTarget%>'
-\nEach item belongs to only one category.
-\nGo as fast as you can while making as few errors as possible."
+/ 7 = "این تکلیف همان تکلیف بخش قبلی است.
+\nبرای «<%item.attributeALabel.item(0)%>» و «<%expressions.rightTarget%>»، کلید سمت چپ «E» را فشار دهید.
+برای «<%item.attributeBLabel.item(0)%>» و «<%expressions.leftTarget%>»، کلید سمت راست «I» را فشار دهید.
+\nهر مورد فقط به یکی از دسته‌ها تعلق دارد.
+\nتا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید."
 </item>
 
 Note: expressions used to assign the correct label to the left and right response keys
@@ -67,7 +67,7 @@ Note: expressions used to assign the correct label to the left and right respons
 </expressions>
 
 <text orLeft>
-/ items = ("or")
+/ items = ("یا")
 / vAlign = top
 / hAlign = left
 / position = (5%, 12%)
@@ -75,7 +75,7 @@ Note: expressions used to assign the correct label to the left and right respons
 </text>
 
 <text orRight>
-/ items = ("or")
+/ items = ("یا")
 / vAlign = top
 / hAlign = right
 / position = (95%, 12%)
@@ -83,13 +83,13 @@ Note: expressions used to assign the correct label to the left and right respons
 </text>
 
 <text spacebar>
-/ items = ("Press the SPACE BAR to begin.")
+/ items = ("برای شروع، کلید فاصله را فشار دهید.")
 / position = (50%, 90%)
 / vAlign = bottom
 </text>
 
 <text errorReminder>
-/ items = ("If you make an error, a red X will appear. Press the other key to continue.")
+/ items = ("اگر اشتباه کنید، یک علامت X قرمز ظاهر می‌شود. برای ادامه، کلید دیگر را فشار دهید.")
 / position = (50%, 95%)
 / vAlign = bottom
 / fontStyle = ("Arial", 3%, false, false, false, false, 5, 1)
@@ -103,10 +103,10 @@ Performance summary
 
 <trial summary>
 / onTrialBegin = {
-	values.magnitude = "little to no";
-	if( abs(expressions.d) > 0.15 ) values.magnitude = "a slight";
-	if( abs(expressions.d) > 0.35 ) values.magnitude = "a moderate";
-	if( abs(expressions.d) >= 0.65 ) values.magnitude = "a strong";
+	values.magnitude = "تقریباً هیچ یا میزان ناچیزی از";
+	if( abs(expressions.d) > 0.15 ) values.magnitude = "اندکی";
+	if( abs(expressions.d) > 0.35 ) values.magnitude = "میزان متوسطی از";
+	if( abs(expressions.d) >= 0.65 ) values.magnitude = "میزان زیادی از";
 	if (expressions.d >= 0.0)
 		values.preferred = item.targetALabel.item(0);
 	if (expressions.d < 0.0)
@@ -123,15 +123,15 @@ Performance summary
 
 
 <text summary>
-/ items = ("Your IAT score (D) was <% expressions.d %>, which suggests <% values.magnitude %> automatic preference to associate:
+/ items = ("نمرهٔ آزمون تداعی ضمنی (D) شما <% expressions.d %> بود. این نمره نشان‌دهندهٔ <% values.magnitude %> ترجیح خودکار برای برقراری تداعی‌های زیر است:
 
 
-* '<% values.preferred %>' with '<%item.attributeALabel.item(0)%>' rather than with '<%item.attributeBLabel.item(0)%>'
+* «<% values.preferred %>» با «<%item.attributeALabel.item(0)%>»، به‌جای «<%item.attributeBLabel.item(0)%>»
  
-* '<% values.notPreferred %>' with '<%item.attributeBLabel.item(0)%>' rather than with '<%item.attributeALabel.item(0)%>'.
-\n\n\nPress the spacebar to complete this session.") 
+* «<% values.notPreferred %>» با «<%item.attributeBLabel.item(0)%>»، به‌جای «<%item.attributeALabel.item(0)%>».
+\n\n\nبرای پایان دادن به این جلسه، کلید فاصله را فشار دهید.")
 / size = (60%, 60%)
-/ hJustify = left
+/ hJustify = right
  </text>
 
 **************************************************************************************************************

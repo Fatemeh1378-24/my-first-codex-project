@@ -79,9 +79,9 @@ function buildSequence(group) {
 function renderOverview() {
   const cards = Object.entries(CONFIG.categories).map(([key, category]) => {
     const content = key.startsWith("target")
-      ? `<div class="face-row">${category.items.map(src => `<img src="${src}" alt="">`).join("")}</div>`
+      ? `<div class="face-row">${category.items.map(src => `<img src="${src}" alt="تصویر چهره">`).join("")}</div>`
       : `<p>${category.items.join(" · ")}</p>`;
-    return `<article class="overview-card"><h2>${category.label}</h2>${content}</article>`;
+    return `<article class="overview-card"><p class="card-heading">دسته</p><h2>${category.label}</h2><p class="card-heading">موارد</p>${content}</article>`;
   });
   el["category-overview"].innerHTML = cards.join("");
 }
@@ -93,16 +93,25 @@ function labelsFor(block) {
   const rightTarget = block.targetAOnLeft ? c.targetB.label : c.targetA.label;
   if (block.kind === "target") return { left: leftTarget, right: rightTarget };
   return {
-    left: `<span class="attribute-label">${c.attributeA.label}</span><span class="joiner">or</span>${leftTarget}`,
-    right: `<span class="attribute-label">${c.attributeB.label}</span><span class="joiner">or</span>${rightTarget}`
+    left: `<span class="attribute-label">${c.attributeA.label}</span><span class="joiner">یا</span>${leftTarget}`,
+    right: `<span class="attribute-label">${c.attributeB.label}</span><span class="joiner">یا</span>${rightTarget}`
   };
 }
 
 function instructionFor(block) {
-  const labels = labelsFor(block);
-  if (block.continuation) return `<h2>Part ${block.part} of 7</h2><p>This is the same task as the previous part.</p><p>Press <strong>E</strong> for ${labels.left.replaceAll("<span class=\"joiner\">or</span>", " or ")} and <strong>I</strong> for ${labels.right.replaceAll("<span class=\"joiner\">or</span>", " or ")}.</p>`;
-  const changed = block.part === 5 ? "<p><strong>Attention: the target categories have changed sides.</strong></p>" : "";
-  return `<h2>Part ${block.part} of 7</h2>${changed}<p>Press <strong>E</strong> for the category on the left and <strong>I</strong> for the category on the right.</p><p>If you make an error, a red × will appear. Press the other response to continue.</p><p>Go as fast as you can while making as few errors as possible.</p>`;
+  const c = CONFIG.categories;
+  const leftTarget = block.targetAOnLeft ? c.targetA.label : c.targetB.label;
+  const rightTarget = block.targetAOnLeft ? c.targetB.label : c.targetA.label;
+  const heading = `<h2>بخش ${block.part} از ۷</h2>`;
+  const speed = `<p>تا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید.</p>`;
+  const error = `<p>اگر اشتباه کنید، یک علامت × قرمز ظاهر می‌شود؛ برای ادامه، پاسخ دیگر را انتخاب کنید.</p>`;
+  const begin = `<p>برای شروع، کلید فاصله را فشار دهید.</p>`;
+  if (block.part === 1) return `${heading}<p>انگشت دست چپ خود را برای مواردی که به دستهٔ «${leftTarget}» تعلق دارند، روی کلید پاسخ <strong>E</strong> بگذارید.<br>انگشت دست راست خود را برای مواردی که به دستهٔ «${rightTarget}» تعلق دارند، روی کلید پاسخ <strong>I</strong> بگذارید.</p><p>موارد یکی‌یکی در وسط صفحه ظاهر می‌شوند.</p>${error}${speed}${begin}`;
+  if (block.part === 2) return `${heading}<p>انگشت دست چپ خود را برای مواردی که به دستهٔ «${c.attributeA.label}» تعلق دارند، روی کلید پاسخ <strong>E</strong> بگذارید.<br>انگشت دست راست خود را برای مواردی که به دستهٔ «${c.attributeB.label}» تعلق دارند، روی کلید پاسخ <strong>I</strong> بگذارید.</p>${error}${speed}${begin}`;
+  if (block.part === 5) return `${heading}<p><strong>توجه! جای برچسب‌ها عوض شده است.</strong></p><p>برای «${leftTarget}»، کلید سمت چپ <strong>E</strong> را فشار دهید.<br>برای «${rightTarget}»، کلید سمت راست <strong>I</strong> را فشار دهید.</p>${speed}${begin}`;
+  const same = block.continuation ? `<p>این تکلیف همان تکلیف بخش قبلی است.</p>` : "";
+  const oneCategory = block.part === 3 || block.continuation ? `<p>هر مورد فقط به یکی از دسته‌ها تعلق دارد.</p>` : "";
+  return `${heading}${same}<p>برای «${c.attributeA.label}» و «${leftTarget}»، کلید سمت چپ <strong>E</strong> را فشار دهید.<br>برای «${c.attributeB.label}» و «${rightTarget}»، کلید سمت راست <strong>I</strong> را فشار دهید.</p>${oneCategory}${block.continuation ? "" : error}${speed}${begin}`;
 }
 
 function start() {
@@ -118,11 +127,11 @@ function showInstruction() {
   const block = state.blocks[state.blockIndex];
   const labels = labelsFor(block);
   el["left-category"].innerHTML = labels.left; el["right-category"].innerHTML = labels.right;
-  el["part-label"].textContent = `Part ${block.part} of 7`;
-  el["trial-label"].textContent = "Instructions";
+  el["part-label"].textContent = `بخش ${block.part} از ۷`;
+  el["trial-label"].textContent = "دستورالعمل‌ها";
   el["progress-fill"].style.width = `${(state.blockIndex / state.blocks.length) * 100}%`;
   el.stimulus.hidden = true; el.error.hidden = true; el["response-controls"].hidden = true; el["key-hint"].hidden = true;
-  el["instruction-card"].innerHTML = `${instructionFor(block)}<button class="primary-button" type="button" id="continue-button">Begin this part</button>`;
+  el["instruction-card"].innerHTML = `${instructionFor(block)}<button class="primary-button" type="button" id="continue-button">شروع این بخش</button>`;
   el["instruction-card"].hidden = false;
   document.querySelector("#continue-button").addEventListener("click", beginBlock);
 }
@@ -138,11 +147,11 @@ function showTrial() {
   const trial = block.trials[state.trialIndex];
   state.awaitingCorrection = false; state.locked = false; state.startedAt = performance.now();
   el.error.hidden = true;
-  el["trial-label"].textContent = `Trial ${state.trialIndex + 1} of ${block.count}`;
+  el["trial-label"].textContent = `کوشش ${state.trialIndex + 1} از ${block.count}`;
   el["progress-fill"].style.width = `${((state.blockIndex + state.trialIndex / block.count) / state.blocks.length) * 100}%`;
   if (trial.category.startsWith("target")) {
     el.stimulus.className = "stimulus";
-    el.stimulus.innerHTML = `<img src="${trial.value}" alt="Face stimulus">`;
+    el.stimulus.innerHTML = `<img src="${trial.value}" alt="محرک چهره">`;
   } else {
     el.stimulus.className = "stimulus word";
     el.stimulus.textContent = trial.value;
@@ -215,11 +224,12 @@ function finish() {
   state.scores = scores;
   el.task.hidden = true; el.summary.hidden = false;
   const valid = Number.isFinite(scores.d);
-  el["d-score"].textContent = valid ? scores.d.toFixed(3) : "N/A";
-  const magnitude = !valid || Math.abs(scores.d) <= .15 ? "little to no" : Math.abs(scores.d) >= .65 ? "a strong" : Math.abs(scores.d) > .35 ? "a moderate" : "a slight";
+  el["d-score"].textContent = valid ? scores.d.toFixed(3) : "محاسبه‌نشده";
+  const magnitude = !valid || Math.abs(scores.d) <= .15 ? "تقریباً هیچ یا میزان ناچیزی از" : Math.abs(scores.d) >= .65 ? "میزان زیادی از" : Math.abs(scores.d) > .35 ? "میزان متوسطی از" : "اندکی";
   const preferred = scores.d >= 0 ? CONFIG.categories.targetA.label : CONFIG.categories.targetB.label;
-  el.interpretation.textContent = valid ? `This score suggests ${magnitude} automatic preference for ${preferred} with ${CONFIG.categories.attributeA.label}, relative to the opposite pairing.` : "A score could not be calculated.";
-  el["quality-metrics"].innerHTML = `<dt>Initial-response accuracy</dt><dd>${scores.percentCorrect.toFixed(1)}%</dd><dt>Responses under 300 ms</dt><dd>${(scores.propRT300 * 100).toFixed(1)}%</dd><dt>Fast-response exclusion flag</dt><dd>${scores.propRT300 > .1 ? "Yes" : "No"}</dd><dt>Counterbalance group</dt><dd>${state.group}</dd>`;
+  const notPreferred = scores.d >= 0 ? CONFIG.categories.targetB.label : CONFIG.categories.targetA.label;
+  el.interpretation.textContent = valid ? `نمرهٔ آزمون تداعی ضمنی (D) شما ${scores.d.toFixed(3)} بود. این نمره نشان‌دهندهٔ ${magnitude} ترجیح خودکار برای تداعی «${preferred}» با «${CONFIG.categories.attributeA.label}» به‌جای «${CONFIG.categories.attributeB.label}»، و «${notPreferred}» با «${CONFIG.categories.attributeB.label}» به‌جای «${CONFIG.categories.attributeA.label}» است.` : "نمره قابل محاسبه نبود.";
+  el["quality-metrics"].innerHTML = `<dt>دقت پاسخ اولیه</dt><dd>${scores.percentCorrect.toFixed(1)}٪</dd><dt>پاسخ‌های کمتر از ۳۰۰ میلی‌ثانیه</dt><dd>${(scores.propRT300 * 100).toFixed(1)}٪</dd><dt>نشانگر حذف به‌دلیل پاسخ‌های سریع</dt><dd>${scores.propRT300 > .1 ? "بله" : "خیر"}</dd><dt>گروه موازنه‌سازی</dt><dd>${state.group}</dd>`;
 }
 
 function downloadData() {

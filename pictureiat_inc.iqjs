@@ -405,7 +405,7 @@ expressions.propRT300, expressions.excludeCriteriaMet)
 / position = (10%, 25%)
 / hAlign = left
 / vAlign = top
-/ hJustify = left
+/ hJustify = right
 / vJustify = center
 / size = (80%, 50%)
 / select = values.instructionIndex
