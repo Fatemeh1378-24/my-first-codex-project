@@ -13,33 +13,33 @@ stimulus items and labels immediately below this line.
 
 ***********************************************************************
 <item attributeALabel>
-/ 1 = "Good"
+/ 1 = "خوب"
 </item>
 
 <item attributeA>
-/ 1 = "Marvelous"
-/ 2 = "Superb"
-/ 3 = "Pleasure"
-/ 4 = "Beautiful"
-/ 5 = "Joyful"
-/ 6 = "Glorious"
-/ 7 = "Lovely"
-/ 8 = "Wonderful"
+/ 1 = "شگفت‌انگیز"
+/ 2 = "عالی"
+/ 3 = "لذت"
+/ 4 = "زیبا"
+/ 5 = "شاد"
+/ 6 = "باشکوه"
+/ 7 = "دوست‌داشتنی"
+/ 8 = "فوق‌العاده"
 </item>
 
 <item attributeBLabel>
-/ 1 = "Bad"
+/ 1 = "بد"
 </item>
 
 <item attributeB>
-/ 1 = "Tragic"
-/ 2 = "Horrible"
-/ 3 = "Agony"
-/ 4 = "Painful"
-/ 5 = "Terrible"
-/ 6 = "Awful"
-/ 7 = "Humiliate"
-/ 8 = "Nasty"
+/ 1 = "غم‌انگیز"
+/ 2 = "وحشتناک"
+/ 3 = "عذاب"
+/ 4 = "دردناک"
+/ 5 = "هولناک"
+/ 6 = "بسیار بد"
+/ 7 = "تحقیر کردن"
+/ 8 = "زننده"
 </item>
 
 <item targetALabel>
