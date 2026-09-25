@@ -43,29 +43,29 @@ stimulus items and labels immediately below this line.
 </item>
 
 <item targetALabel>
-/ 1 = "White American"
+/ 1 = "Iranian"
 </item>
 
 <item targetA>
-/ 1 = "wf2_nc.jpg"
-/ 2 = "wf3_nc.jpg"
-/ 3 = "wf6_nc.jpg"
-/ 4 = "wm1_nc.jpg"
-/ 5 = "wm4_nc.jpg"
-/ 6 = "wm6_nc.jpg"
+/ 1 = "Iranian_F1.jpg"
+/ 2 = "Iranian_F2.jpg"
+/ 3 = "Iranian_F3.jpg"
+/ 4 = "Iranian_M1.jpg"
+/ 5 = "Iranian_M2.jpg"
+/ 6 = "Iranian_M3.jpg"
 </item>
 
 <item targetBLabel>
-/ 1 = "Black American"
+/ 1 = "Afghan"
 </item>
 
 <item targetB>
-/ 1 = "bf14_nc.jpg"
-/ 2 = "bf23_nc.jpg"
-/ 3 = "bf56_nc.jpg"
-/ 4 = "bm14_nc.jpg"
-/ 5 = "bm23_nc.jpg"
-/ 6 = "bm56_nc.jpg"
+/ 1 = "Afghan_F1.jpg"
+/ 2 = "Afghan_F2.jpg"
+/ 3 = "Afghan_F3.jpg"
+/ 4 = "Afghan_M1.jpg"
+/ 5 = "Afghan_M2.jpg"
+/ 6 = "Afghan_M3.jpg"
 </item>
 
 /////////////////////////////////

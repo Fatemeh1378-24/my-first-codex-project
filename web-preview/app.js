@@ -7,8 +7,8 @@ const CONFIG = {
   categories: {
     attributeA: { label: "Good", items: ["Marvelous", "Superb", "Pleasure", "Beautiful", "Joyful", "Glorious", "Lovely", "Wonderful"] },
     attributeB: { label: "Bad", items: ["Tragic", "Horrible", "Agony", "Painful", "Terrible", "Awful", "Humiliate", "Nasty"] },
-    targetA: { label: "White American", items: ["../wf2_nc.jpg", "../wf3_nc.jpg", "../wf6_nc.jpg", "../wm1_nc.jpg", "../wm4_nc.jpg", "../wm6_nc.jpg"] },
-    targetB: { label: "Black American", items: ["../bf14_nc.jpg", "../bf23_nc.jpg", "../bf56_nc.jpg", "../bm14_nc.jpg", "../bm23_nc.jpg", "../bm56_nc.jpg"] }
+    targetA: { label: "Iranian", items: ["../Iranian_F1.jpg", "../Iranian_F2.jpg", "../Iranian_F3.jpg", "../Iranian_M1.jpg", "../Iranian_M2.jpg", "../Iranian_M3.jpg"] },
+    targetB: { label: "Afghan", items: ["../Afghan_F1.jpg", "../Afghan_F2.jpg", "../Afghan_F3.jpg", "../Afghan_M1.jpg", "../Afghan_M2.jpg", "../Afghan_M3.jpg"] }
   }
 };
 
