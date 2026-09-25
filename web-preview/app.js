@@ -7,8 +7,8 @@ const CONFIG = {
   categories: {
     attributeA: { label: "خوب", items: ["شگفت‌انگیز", "عالی", "لذت", "زیبا", "شاد", "باشکوه", "دوست‌داشتنی", "فوق‌العاده"] },
     attributeB: { label: "بد", items: ["غم‌انگیز", "وحشتناک", "عذاب", "دردناک", "هولناک", "بسیار بد", "تحقیر کردن", "زننده"] },
-    targetA: { label: "Iranian", items: ["../Iranian_F1.jpg", "../Iranian_F2.jpg", "../Iranian_F3.jpg", "../Iranian_M1.jpg", "../Iranian_M2.jpg", "../Iranian_M3.jpg"] },
-    targetB: { label: "Afghan", items: ["../Afghan_F1.jpg", "../Afghan_F2.jpg", "../Afghan_F3.jpg", "../Afghan_M1.jpg", "../Afghan_M2.jpg", "../Afghan_M3.jpg"] }
+    targetA: { label: "ایرانی", items: ["../Iranian_F1.jpg", "../Iranian_F2.jpg", "../Iranian_F3.jpg", "../Iranian_M1.jpg", "../Iranian_M2.jpg", "../Iranian_M3.jpg"] },
+    targetB: { label: "افغان", items: ["../Afghan_F1.jpg", "../Afghan_F2.jpg", "../Afghan_F3.jpg", "../Afghan_M1.jpg", "../Afghan_M2.jpg", "../Afghan_M3.jpg"] }
   }
 };
 
