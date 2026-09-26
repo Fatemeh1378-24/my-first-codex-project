@@ -291,6 +291,28 @@ function calculateScores(trials = state.trials, participantGender = state.partic
   };
 }
 
+function participantInsertPayload(scores) {
+  return {
+    participant_id: scores.Participant_ID,
+    group_number: scores.Group,
+    gender: scores.Gender,
+    d_score: scores.D_score,
+    d_short: scores.D_short,
+    d_long: scores.D_long,
+    percent_correct: scores.percentCorrect,
+    prop_rt_300: scores.propRT300,
+    exclude_criteria_met: scores.excludeCriteriaMet,
+    mean_rt_iranian_female: scores.Mean_RT_Iranian_Female,
+    mean_rt_iranian_male: scores.Mean_RT_Iranian_Male,
+    mean_rt_afghan_female: scores.Mean_RT_Afghan_Female,
+    mean_rt_afghan_male: scores.Mean_RT_Afghan_Male,
+    mean_rt_female_faces: scores.Mean_RT_Female_Faces,
+    mean_rt_male_faces: scores.Mean_RT_Male_Faces,
+    gender_rt_difference: scores.Gender_RT_Difference,
+    same_gender_advantage: scores.Same_Gender_Advantage
+  };
+}
+
 async function saveParticipantResults(scores) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/participants`, {
     method: "POST",
@@ -300,7 +322,7 @@ async function saveParticipantResults(scores) {
       "Content-Type": "application/json",
       Prefer: "return=minimal,resolution=merge-duplicates"
     },
-    body: JSON.stringify(scores)
+    body: JSON.stringify(participantInsertPayload(scores))
   });
   if (!response.ok) throw new Error(`Supabase request failed with status ${response.status}`);
 }

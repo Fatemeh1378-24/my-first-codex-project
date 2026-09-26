@@ -18,9 +18,9 @@ const context = {
   fetch: async (...args) => { requests.push(args); return { ok: true, status: 201 }; }
 };
 vm.createContext(context);
-vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
+vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
 
-const { buildSequence, instructionFor, calculateScores, generateParticipantId, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
+const { buildSequence, instructionFor, calculateScores, generateParticipantId, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
 const phrase = {
   attributeA: "یک کلمه خوب",
   attributeB: "یک کلمه بد",
@@ -70,11 +70,30 @@ assert.match(source, /scores = \{ \.\.\.state\.participant, \.\.\.calculateScore
 assert.match(source, /fetch\(`\$\{SUPABASE_URL\}\/rest\/v1\/participants`/, "completed results must target public.participants through Supabase REST");
 assert.match(source, /apikey: SUPABASE_PUBLISHABLE_KEY/);
 assert.match(source, /Authorization: `Bearer \$\{SUPABASE_PUBLISHABLE_KEY\}`/);
-assert.match(source, /body: JSON\.stringify\(scores\)/, "the completed participant score row must be submitted");
+assert.match(source, /body: JSON\.stringify\(participantInsertPayload\(scores\)\)/, "the completed participant score row must be mapped to the database schema");
 assert.match(html, /id="save-status"[^>]*class="save-status"/);
 assert.match(html, /id="retry-save-button"/);
 
-const resultRow = { Participant_ID: SESSION_PARTICIPANT_ID, Group: 1, D_score: 0.42 };
+const resultRow = {
+  Participant_ID: SESSION_PARTICIPANT_ID, Group: 1, Gender: "female",
+  D_score: 0.42, D_short: 0.31, D_long: 0.53,
+  percentCorrect: 95, propRT300: 0.02, excludeCriteriaMet: false,
+  Mean_RT_Iranian_Female: 510, Mean_RT_Iranian_Male: 520,
+  Mean_RT_Afghan_Female: 610, Mean_RT_Afghan_Male: 620,
+  Mean_RT_Female_Faces: 560, Mean_RT_Male_Faces: 570,
+  Gender_RT_Difference: 10, Same_Gender_Advantage: 10
+};
+const expectedSupabaseColumns = [
+  "participant_id", "group_number", "gender", "d_score", "d_short", "d_long",
+  "percent_correct", "prop_rt_300", "exclude_criteria_met",
+  "mean_rt_iranian_female", "mean_rt_iranian_male",
+  "mean_rt_afghan_female", "mean_rt_afghan_male",
+  "mean_rt_female_faces", "mean_rt_male_faces",
+  "gender_rt_difference", "same_gender_advantage"
+];
+const mappedRow = participantInsertPayload(resultRow);
+assert.deepEqual(Object.keys(mappedRow), expectedSupabaseColumns, "insert payload keys must exactly match public.participants columns");
+assert.deepEqual(Object.values(mappedRow), Object.values(resultRow), "schema mapping must preserve every calculated value");
 await saveParticipantResults(resultRow);
 assert.equal(requests.length, 1);
 const [requestUrl, requestOptions] = requests[0];
@@ -82,7 +101,7 @@ assert.equal(requestUrl, "https://iiogctpamxbomtjdzred.supabase.co/rest/v1/parti
 assert.equal(requestOptions.method, "POST");
 assert.equal(requestOptions.headers.apikey, "sb_publishable_BOV3oSNFL9JqF2TWbKhABg_FR3oon3d");
 assert.equal(requestOptions.headers.Authorization, `Bearer ${requestOptions.headers.apikey}`);
-assert.deepEqual(JSON.parse(requestOptions.body), resultRow);
+assert.equal(requestOptions.body, JSON.stringify(mappedRow));
 
 function simulatedTrials(group, compatibleRt, incompatibleRt) {
   const parts = group === 1
