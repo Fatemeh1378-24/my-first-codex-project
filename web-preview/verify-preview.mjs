@@ -22,9 +22,9 @@ const context = {
   }
 };
 vm.createContext(context);
-vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
+vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
 
-const { buildSequence, instructionFor, calculateScores, generateParticipantId, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
+const { buildSequence, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
 const phrase = {
   attributeA: "یک کلمه خوب",
   attributeB: "یک کلمه بد",
@@ -61,7 +61,19 @@ for (const group of [1, 2]) {
 
 assert.match(html, /id="left-response"[\s\S]*?<span class="key">E<\/span>/);
 assert.match(html, /id="right-response"[\s\S]*?<span class="key">I<\/span>/);
-assert.doesNotMatch(html, /participant-id|شناسه شرکت‌کننده/i, "participant ID must never be requested or displayed");
+assert.doesNotMatch(html, /<input[^>]+(?:participant[_-]?id|شناسه شرکت‌کننده)/i, "participant ID input must not exist");
+assert.doesNotMatch(html, /name=["'](?:nationality|ethnicity)["']/i, "nationality and ethnicity fields must not exist");
+const demographicNames = [...html.matchAll(/<(?:input|select)[^>]+name="([^"]+)"/g)].map(match => match[1]);
+assert.deepEqual(demographicNames, ["age", "gender", "education_level", "employment_status", "monthly_income", "religiosity"], "only the six requested demographic fields should appear, in order");
+assert.match(html, /این پاسخ‌ها و اطلاعات در راستای یک پژوهش علمی در چارچوب پایان‌نامه کارشناسی ارشد جمع‌آوری می‌شوند. از وقتی که برای شرکت در این پژوهش اختصاص می‌دهید، سپاسگزارم./);
+assert.match(html, /ادامه و شروع آزمون/);
+assert.equal(isEligibleAge(19), false);
+assert.equal(isEligibleAge(20), true);
+assert.equal(isEligibleAge(30), true);
+assert.equal(isEligibleAge(31), false);
+assert.equal(isEligibleAge(20.5), false);
+assert.match(css, /font-family:\s*Vazirmatn, Tahoma, Arial, sans-serif/);
+assert.match(css, /fonts\.googleapis\.com\/css2\?family=Vazirmatn/);
 assert.match(css, /\.face-row img[^}]*object-fit: contain/);
 assert.match(css, /\.stimulus img[^}]*object-fit: contain/);
 assert.match(SESSION_PARTICIPANT_ID, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
@@ -79,7 +91,9 @@ assert.match(html, /id="save-status"[^>]*class="save-status"/);
 assert.match(html, /id="retry-save-button"/);
 
 const resultRow = {
-  Participant_ID: SESSION_PARTICIPANT_ID, Group: 1, Gender: "female",
+  Participant_ID: SESSION_PARTICIPANT_ID, Group: 1, Age: 25, Gender: "زن",
+  Education_Level: "کارشناسی ارشد", Employment_Status: "دانشجو",
+  Monthly_Income: "زیر ۲۵ میلیون تومان", Religiosity: "متوسط",
   D_score: 0.42, D_short: 0.31, D_long: 0.53,
   percentCorrect: 95, propRT300: 0.02, excludeCriteriaMet: false,
   Mean_RT_Iranian_Female: 510, Mean_RT_Iranian_Male: 520,
@@ -88,7 +102,7 @@ const resultRow = {
   Gender_RT_Difference: 10, Same_Gender_Advantage: 10
 };
 const expectedSupabaseColumns = [
-  "participant_id", "group_number", "gender", "d_score", "d_short", "d_long",
+  "participant_id", "group_number", "age", "gender", "education_level", "employment_status", "monthly_income", "religiosity", "d_score", "d_short", "d_long",
   "percent_correct", "prop_rt_300", "exclude_criteria_met",
   "mean_rt_iranian_female", "mean_rt_iranian_male",
   "mean_rt_afghan_female", "mean_rt_afghan_male",
@@ -156,5 +170,6 @@ fast.slice(0, 13).forEach(trial => { trial.latency = 250; });
 assert.equal(calculateScores(fast).excludeCriteriaMet, true, "more than 10% sub-300 ms trials must flag exclusion");
 
 console.log("Verified dynamic instructions and response mappings for all 7 blocks in groups 1 and 2.");
+console.log("Verified the exact six-field demographic form, age boundary validation, session linkage, and Vazirmatn styling.");
 console.log("Verified E/left and I/right controls plus non-cropping overview and trial image styles.");
 console.log("Verified D-score direction in both groups, component averaging, gender RT outputs, and >10% fast-response exclusion.");
