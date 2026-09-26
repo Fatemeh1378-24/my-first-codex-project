@@ -399,13 +399,6 @@ function finish() {
   submitResults();
 }
 
-function downloadData() {
-  const payload = { previewVersion: 2, completedAt: new Date().toISOString(), participant: state.participant, scores: state.scores, trials: state.trials };
-  const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
-  const link = Object.assign(document.createElement("a"), { href: url, download: `race-iat-preview-${Date.now()}.json` });
-  link.click(); URL.revokeObjectURL(url);
-}
-
 document.addEventListener("keydown", event => {
   if (event.repeat) return;
   if (event.code === RESPONSES.left.code) respond("left", "keyboard");
@@ -419,5 +412,4 @@ el.age.addEventListener("input", () => { el["age-error"].hidden = isEligibleAge(
 el["restart-button"].addEventListener("click", () => {
   el.summary.hidden = true; el.intro.hidden = false;
 });
-el["download-button"].addEventListener("click", downloadData);
 el["retry-save-button"].addEventListener("click", submitResults);
