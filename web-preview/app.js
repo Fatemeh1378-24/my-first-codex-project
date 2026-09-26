@@ -12,6 +12,12 @@ const CONFIG = {
   }
 };
 
+const GENDER_LABELS = {
+  female: "زن",
+  male: "مرد",
+  prefer_not_to_say: "ترجیح می‌دهم نگویم"
+};
+
 // This browser-safe publishable key is intentionally used directly by the
 // static preview. Row-level security on public.participants remains the
 // database-side authorization boundary; never replace it with a secret key.
@@ -45,8 +51,27 @@ const el = Object.fromEntries([...document.querySelectorAll("[id]")].map(node =>
 const state = {
   blocks: [], blockIndex: 0, trialIndex: 0, trials: [], awaitingCorrection: false, locked: false, startedAt: 0,
   group: SESSION_GROUP,
-  participant: { Participant_ID: SESSION_PARTICIPANT_ID, Group: SESSION_GROUP, Gender: "prefer_not_to_say" }
+  participant: { Participant_ID: SESSION_PARTICIPANT_ID, Group: SESSION_GROUP }
 };
+
+function isEligibleAge(value) {
+  const age = Number(value);
+  return Number.isInteger(age) && age >= 20 && age <= 30;
+}
+
+function collectDemographics(form) {
+  const values = new FormData(form);
+  const normalizedGender = values.get("gender");
+  return {
+    Age: Number(values.get("age")),
+    Gender: GENDER_LABELS[normalizedGender],
+    Gender_Normalized: normalizedGender,
+    Education_Level: values.get("education_level"),
+    Employment_Status: values.get("employment_status"),
+    Monthly_Income: values.get("monthly_income"),
+    Religiosity: values.get("religiosity")
+  };
+}
 
 function shuffled(values) {
   const copy = [...values];
@@ -167,7 +192,17 @@ function instructionFor(block) {
   return `${heading}${same}${mappings}${oneCategory}${block.continuation ? "" : error}${speed}${begin}`;
 }
 
-function start() {
+function start(event) {
+  event?.preventDefault();
+  const form = el["demographic-form"];
+  const eligibleAge = isEligibleAge(el.age.value);
+  el["age-error"].hidden = eligibleAge;
+  if (!eligibleAge || !form.checkValidity()) {
+    if (!eligibleAge) el.age.focus();
+    else form.reportValidity();
+    return;
+  }
+  state.participant = { ...state.participant, ...collectDemographics(form) };
   state.blocks = buildSequence(state.group);
   state.blockIndex = 0; state.trialIndex = 0; state.trials = []; state.locked = false;
   el.intro.hidden = true; el.summary.hidden = true; el.task.hidden = false;
@@ -253,7 +288,7 @@ function sampleSd(values) {
   return Math.sqrt(values.reduce((sum, value) => sum + (value - avg) ** 2, 0) / (values.length - 1));
 }
 
-function calculateScores(trials = state.trials, participantGender = state.participant?.Gender ?? "prefer_not_to_say") {
+function calculateScores(trials = state.trials, participantGender = state.participant?.Gender_Normalized ?? "prefer_not_to_say") {
   // Millisecond's correction-required variant records latency to the final,
   // correct response. Accordingly, t.latency (not firstLatency) is scored.
   const testTrials = trials.filter(t => [3, 4, 6, 7].includes(t.part));
@@ -267,8 +302,8 @@ function calculateScores(trials = state.trials, participantGender = state.partic
   // regardless of which condition was presented first.
   const D_short = (mean(cells["incompatible-short"]) - mean(cells["compatible-short"])) / sampleSd(shortPooled);
   const D_long = (mean(cells["incompatible-long"]) - mean(cells["compatible-long"])) / sampleSd(longPooled);
-  const faceMean = (nationality, gender) => mean(eligible
-    .filter(t => t.category === nationality && new RegExp(`_${gender}[0-9]+\\.jpg$`, "i").test(t.value))
+  const faceMean = (targetCategory, gender) => mean(eligible
+    .filter(t => t.category === targetCategory && new RegExp(`_${gender}[0-9]+\\.jpg$`, "i").test(t.value))
     .map(t => t.latency));
   const Mean_RT_Iranian_Female = faceMean("targetA", "F");
   const Mean_RT_Iranian_Male = faceMean("targetA", "M");
@@ -295,7 +330,12 @@ function participantInsertPayload(scores) {
   return {
     participant_id: scores.Participant_ID,
     group_number: scores.Group,
+    age: scores.Age,
     gender: scores.Gender,
+    education_level: scores.Education_Level,
+    employment_status: scores.Employment_Status,
+    monthly_income: scores.Monthly_Income,
+    religiosity: scores.Religiosity,
     d_score: scores.D_score,
     d_short: scores.D_short,
     d_long: scores.D_long,
@@ -374,8 +414,10 @@ document.addEventListener("keydown", event => {
 });
 el["left-response"].addEventListener("pointerdown", () => respond("left", "touch"));
 el["right-response"].addEventListener("pointerdown", () => respond("right", "touch"));
-el["start-button"].addEventListener("click", start);
-el["restart-button"].addEventListener("click", start);
+el["demographic-form"].addEventListener("submit", start);
+el.age.addEventListener("input", () => { el["age-error"].hidden = isEligibleAge(el.age.value); });
+el["restart-button"].addEventListener("click", () => {
+  el.summary.hidden = true; el.intro.hidden = false;
+});
 el["download-button"].addEventListener("click", downloadData);
 el["retry-save-button"].addEventListener("click", submitResults);
-renderOverview();
