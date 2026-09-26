@@ -39,7 +39,7 @@ p { line-height: 1.55; }
 .overview-card p { color: #ddd; font-size: .9rem; margin: 0; }
 .overview-card .card-heading { color: var(--muted); font-size: .72rem; font-weight: 800; margin: 0 0 4px; }
 .face-row { display: flex; gap: 5px; overflow-x: auto; }
-.face-row img { width: 46px; height: 61px; object-fit: cover; border-radius: 5px; }
+.face-row img { width: 46px; height: 61px; object-fit: contain; object-position: center; background: #050505; border-radius: 5px; }
 
 .notice { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; border-right: 3px solid var(--green); padding: 12px 16px; margin: 24px 0; background: rgba(126,231,135,.07); }
 .fine-print { color: var(--muted); font-size: .8rem; }
@@ -65,12 +65,13 @@ kbd { background: #fff; color: #111; border-radius: 5px; padding: 2px 7px; font-
 .joiner { display: block; color: #ddd; font-size: .65em; font-weight: 400; margin: 5px 0; }
 .stimulus { font-size: clamp(2.3rem, 8vw, 5rem); font-weight: 800; text-align: center; }
 .stimulus.word { color: var(--green); }
-.stimulus img { display: block; width: clamp(155px, 28vw, 250px); height: auto; max-height: 40vh; object-fit: contain; }
+.stimulus img { display: block; width: auto; height: auto; max-width: min(80vw, 250px); max-height: min(48vh, 360px); object-fit: contain; object-position: center; }
 .error { position: absolute; bottom: 15px; color: #ff4d57; font-size: clamp(4rem, 13vw, 8rem); font-weight: 900; line-height: 1; }
 
 .instruction-card { width: min(720px, 100%); text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: clamp(22px, 5vw, 42px); box-shadow: 0 20px 60px #0008; }
 .instruction-card h2 { font-size: clamp(1.5rem, 5vw, 2.5rem); margin-top: 0; }
 .instruction-card p { color: #d7dae0; }
+.instruction-card .response-instructions { text-align: right; }
 .instruction-card button { margin-top: 14px; }
 
 .response-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; direction: ltr; }

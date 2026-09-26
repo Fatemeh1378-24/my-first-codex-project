@@ -12,6 +12,13 @@ const CONFIG = {
   }
 };
 
+// Keep participant-facing instructions tied to the same response configuration
+// used by the keyboard and touch handlers below.
+const RESPONSES = {
+  left: { key: "E", code: "KeyE", sideLabel: "سمت چپ" },
+  right: { key: "I", code: "KeyI", sideLabel: "سمت راست" }
+};
+
 const el = Object.fromEntries([...document.querySelectorAll("[id]")].map(node => [node.id, node]));
 const state = { blocks: [], blockIndex: 0, trialIndex: 0, trials: [], awaitingCorrection: false, locked: false, startedAt: 0, group: 1 };
 
@@ -100,18 +107,38 @@ function labelsFor(block) {
 
 function instructionFor(block) {
   const c = CONFIG.categories;
-  const leftTarget = block.targetAOnLeft ? c.targetA.label : c.targetB.label;
-  const rightTarget = block.targetAOnLeft ? c.targetB.label : c.targetA.label;
   const heading = `<h2>بخش ${block.part} از ۷</h2>`;
-  const speed = `<p>تا جای ممکن سریع پاسخ دهید و تا حد امکان اشتباه کمتری داشته باشید.</p>`;
+  const speed = `<p>لطفاً تا حد امکان سریع پاسخ دهید.</p>`;
   const error = `<p>اگر اشتباه کنید، یک علامت × قرمز ظاهر می‌شود؛ برای ادامه، پاسخ دیگر را انتخاب کنید.</p>`;
   const begin = `<p>برای شروع، کلید فاصله را فشار دهید.</p>`;
-  if (block.part === 1) return `${heading}<p>انگشت دست چپ خود را برای مواردی که به دستهٔ «${leftTarget}» تعلق دارند، روی کلید پاسخ <strong>E</strong> بگذارید.<br>انگشت دست راست خود را برای مواردی که به دستهٔ «${rightTarget}» تعلق دارند، روی کلید پاسخ <strong>I</strong> بگذارید.</p><p>موارد یکی‌یکی در وسط صفحه ظاهر می‌شوند.</p>${error}${speed}${begin}`;
-  if (block.part === 2) return `${heading}<p>انگشت دست چپ خود را برای مواردی که به دستهٔ «${c.attributeA.label}» تعلق دارند، روی کلید پاسخ <strong>E</strong> بگذارید.<br>انگشت دست راست خود را برای مواردی که به دستهٔ «${c.attributeB.label}» تعلق دارند، روی کلید پاسخ <strong>I</strong> بگذارید.</p>${error}${speed}${begin}`;
-  if (block.part === 5) return `${heading}<p><strong>توجه! جای برچسب‌ها عوض شده است.</strong></p><p>برای «${leftTarget}»، کلید سمت چپ <strong>E</strong> را فشار دهید.<br>برای «${rightTarget}»، کلید سمت راست <strong>I</strong> را فشار دهید.</p>${speed}${begin}`;
+
+  const categoryPhrase = category => category === "attributeA"
+    ? `یک کلمه ${c.attributeA.label}`
+    : category === "attributeB"
+      ? `یک کلمه ${c.attributeB.label}`
+      : category === "targetA"
+        ? `چهره یک فرد ${c.targetA.label}`
+        : `چهره یک فرد ${c.targetB.label}`;
+  const categoriesForSide = side => {
+    const relevant = block.kind === "attribute"
+      ? ["attributeA", "attributeB"]
+      : block.kind === "target"
+        ? ["targetA", "targetB"]
+        : ["attributeA", "attributeB", "targetA", "targetB"];
+    return relevant.filter(category => block.mapping[category] === side);
+  };
+  const responseInstruction = side => {
+    const response = RESPONSES[side];
+    const stimulus = categoriesForSide(side).map(categoryPhrase).join(" یا ");
+    return `اگر ${stimulus} را دیدید، در کامپیوتر یا لپ‌تاپ کلید <strong>${response.key}</strong> مربوط به پاسخ ${response.sideLabel} را فشار دهید؛ اگر با گوشی یا تبلت آزمون را انجام می‌دهید، دکمه ${response.sideLabel} صفحه را لمس کنید.`;
+  };
+  const mappings = `<p class="response-instructions">${responseInstruction("left")}<br><br>${responseInstruction("right")}</p>`;
+  if (block.part === 1) return `${heading}${mappings}<p>محرک‌ها یکی‌یکی در وسط صفحه ظاهر می‌شوند.</p>${error}${speed}${begin}`;
+  if (block.part === 2) return `${heading}${mappings}${error}${speed}${begin}`;
+  if (block.part === 5) return `${heading}<p><strong>توجه! جای برچسب‌ها عوض شده است.</strong></p>${mappings}${speed}${begin}`;
   const same = block.continuation ? `<p>این تکلیف همان تکلیف بخش قبلی است.</p>` : "";
   const oneCategory = block.part === 3 || block.continuation ? `<p>هر مورد فقط به یکی از دسته‌ها تعلق دارد.</p>` : "";
-  return `${heading}${same}<p>برای «${c.attributeA.label}» و «${leftTarget}»، کلید سمت چپ <strong>E</strong> را فشار دهید.<br>برای «${c.attributeB.label}» و «${rightTarget}»، کلید سمت راست <strong>I</strong> را فشار دهید.</p>${oneCategory}${block.continuation ? "" : error}${speed}${begin}`;
+  return `${heading}${same}${mappings}${oneCategory}${block.continuation ? "" : error}${speed}${begin}`;
 }
 
 function start() {
@@ -241,8 +268,8 @@ function downloadData() {
 
 document.addEventListener("keydown", event => {
   if (event.repeat) return;
-  if (event.code === "KeyE") respond("left", "keyboard");
-  if (event.code === "KeyI") respond("right", "keyboard");
+  if (event.code === RESPONSES.left.code) respond("left", "keyboard");
+  if (event.code === RESPONSES.right.code) respond("right", "keyboard");
   if (event.code === "Space" && !el["instruction-card"].hidden) { event.preventDefault(); document.querySelector("#continue-button")?.click(); }
 });
 el["left-response"].addEventListener("pointerdown", () => respond("left", "touch"));
