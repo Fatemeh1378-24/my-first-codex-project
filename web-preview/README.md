@@ -17,7 +17,9 @@ The preview randomly assigns one of the two block orders. For repeatable testing
 - <http://localhost:8000/web-preview/?group=1> — compatible pairing first
 - <http://localhost:8000/web-preview/?group=2> — incompatible pairing first
 
-Desktop users can respond with **E** (left) and **I** (right). Touch devices display large left and right response buttons. At the end, trial-level data and calculated scores can be downloaded as JSON.
+Desktop users can respond with **E** (left) and **I** (right). Touch devices display large left and right response buttons. At the end, the calculated participant results are saved to the Supabase `public.participants` table with the session's anonymous participant ID. A failed request is shown to the participant and can be retried; trial-level data and calculated scores can still be downloaded as JSON.
+
+The static app authenticates requests with the configured Supabase publishable key. Supabase Row Level Security must allow anonymous `INSERT` access to `public.participants`; no secret or service-role key belongs in this browser application.
 
 ## GitHub Pages
 

@@ -12,6 +12,12 @@ const CONFIG = {
   }
 };
 
+// This browser-safe publishable key is intentionally used directly by the
+// static preview. Row-level security on public.participants remains the
+// database-side authorization boundary; never replace it with a secret key.
+const SUPABASE_URL = "https://iiogctpamxbomtjdzred.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BOV3oSNFL9JqF2TWbKhABg_FR3oon3d";
+
 // Keep participant-facing instructions tied to the same response configuration
 // used by the keyboard and touch handlers below.
 const RESPONSES = {
@@ -285,6 +291,36 @@ function calculateScores(trials = state.trials, participantGender = state.partic
   };
 }
 
+async function saveParticipantResults(scores) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/participants`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal,resolution=merge-duplicates"
+    },
+    body: JSON.stringify(scores)
+  });
+  if (!response.ok) throw new Error(`Supabase request failed with status ${response.status}`);
+}
+
+async function submitResults() {
+  el["save-status"].className = "save-status saving";
+  el["save-status"].textContent = "در حال ذخیره امن نتایج…";
+  el["retry-save-button"].hidden = true;
+  try {
+    await saveParticipantResults(state.scores);
+    el["save-status"].className = "save-status saved";
+    el["save-status"].textContent = "نتایج شما با موفقیت ذخیره شد.";
+  } catch (error) {
+    console.error("Unable to save completed IAT results.", error);
+    el["save-status"].className = "save-status failed";
+    el["save-status"].textContent = "ذخیره نتایج انجام نشد. اتصال اینترنت را بررسی و دوباره تلاش کنید.";
+    el["retry-save-button"].hidden = false;
+  }
+}
+
 function finish() {
   const scores = { ...state.participant, ...calculateScores() };
   state.scores = scores;
@@ -296,6 +332,7 @@ function finish() {
   const notPreferred = scores.D_score >= 0 ? CONFIG.categories.targetB.label : CONFIG.categories.targetA.label;
   el.interpretation.textContent = valid ? `نمرهٔ آزمون تداعی ضمنی (D) شما ${scores.D_score.toFixed(3)} بود. این نمره نشان‌دهندهٔ ${magnitude} ترجیح خودکار برای تداعی «${preferred}» با «${CONFIG.categories.attributeA.label}» به‌جای «${CONFIG.categories.attributeB.label}»، و «${notPreferred}» با «${CONFIG.categories.attributeB.label}» به‌جای «${CONFIG.categories.attributeA.label}» است.` : "نمره قابل محاسبه نبود.";
   el["quality-metrics"].innerHTML = `<dt>دقت پاسخ اولیه</dt><dd>${scores.percentCorrect.toFixed(1)}٪</dd><dt>پاسخ‌های کمتر از ۳۰۰ میلی‌ثانیه</dt><dd>${(scores.propRT300 * 100).toFixed(1)}٪</dd><dt>نشانگر حذف به‌دلیل پاسخ‌های سریع</dt><dd>${scores.excludeCriteriaMet ? "بله" : "خیر"}</dd><dt>گروه موازنه‌سازی</dt><dd>${state.group}</dd>`;
+  submitResults();
 }
 
 function downloadData() {
@@ -316,4 +353,5 @@ el["right-response"].addEventListener("pointerdown", () => respond("right", "tou
 el["start-button"].addEventListener("click", start);
 el["restart-button"].addEventListener("click", start);
 el["download-button"].addEventListener("click", downloadData);
+el["retry-save-button"].addEventListener("click", submitResults);
 renderOverview();

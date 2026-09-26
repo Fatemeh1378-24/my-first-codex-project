@@ -85,6 +85,11 @@ kbd { background: #fff; color: #111; border-radius: 5px; padding: 2px 7px; font-
 .metrics { display: grid; grid-template-columns: 1fr auto; gap: 10px 24px; margin: 28px 0; }
 .metrics dt { color: var(--muted); }
 .metrics dd { margin: 0; font-weight: 800; }
+.save-result { min-height: 52px; margin: 0 0 20px; }
+.save-status { display: block; color: var(--muted); }
+.save-status.saved { color: var(--green); }
+.save-status.failed { color: #ff7b82; }
+.retry-save-button { margin-top: 10px; padding-block: 9px; }
 .summary-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
 @media (min-width: 760px) and (hover: hover) {
