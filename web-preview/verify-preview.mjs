@@ -89,9 +89,17 @@ assert.match(source, /Authorization: `Bearer \$\{SUPABASE_PUBLISHABLE_KEY\}`/);
 assert.match(source, /body: JSON\.stringify\(participantInsertPayload\(scores\)\)/, "the completed participant score row must be mapped to the database schema");
 assert.match(html, /id="save-status"[^>]*class="save-status"/);
 assert.match(html, /id="retry-save-button"/);
+assert.match(html, /از مشارکت شما در این پژوهش سپاسگزاریم./, "successful completion must thank the participant");
+assert.match(html, /پاسخ‌های شما با موفقیت ثبت شد./, "successful completion must confirm that responses were saved");
+assert.doesNotMatch(html, /id=["'](?:d-score|interpretation|quality-metrics)["']/, "completion UI must not contain score or quality output elements");
+assert.doesNotMatch(html, /نمرهٔ D|دقت پاسخ اولیه|کمتر از ۳۰۰|نشانگر حذف|گروه موازنه‌سازی|Gender RT Difference|Same-Gender Advantage/, "completion UI must not disclose participant metrics");
+assert.doesNotMatch(html, /id=["']restart-button["']|اجرای دوباره/, "successful completion must not offer a restart control");
 assert.doesNotMatch(html, /id=["']download-button["']/i, "participant-facing trial-data download button must not exist");
 assert.doesNotMatch(html, /دانلود داده‌های کوشش‌ها/, "participant-facing trial-data download label must not exist");
 assert.doesNotMatch(source, /\bdownloadData\b|download-button/, "participant-facing trial-data download handler must not exist");
+assert.doesNotMatch(source, /el\[(?:"|')d-score(?:"|')\]|el\.interpretation|quality-metrics/, "calculated metrics must not be rendered into the completion UI");
+assert.match(source, /await saveParticipantResults\(state\.scores\);[\s\S]*?el\["completion-message"\]\.hidden = false;/, "success message must only appear after saving succeeds");
+assert.match(source, /catch \(error\)[\s\S]*?el\["retry-save-button"\]\.hidden = false;/, "save failure must expose the retry control");
 
 const resultRow = {
   Participant_ID: SESSION_PARTICIPANT_ID, Group: 1, Age: 25, Gender: "زن",
@@ -176,4 +184,5 @@ console.log("Verified dynamic instructions and response mappings for all 7 block
 console.log("Verified the exact six-field demographic form, age boundary validation, session linkage, and Vazirmatn styling.");
 console.log("Verified E/left and I/right controls plus non-cropping overview and trial image styles.");
 console.log("Verified that no participant-facing trial-data download control or handler exists.");
+console.log("Verified that successful completion is score-free and terminal, while save failure retains retry.");
 console.log("Verified D-score direction in both groups, component averaging, gender RT outputs, and >10% fast-response exclusion.");

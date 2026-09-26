@@ -370,13 +370,15 @@ async function saveParticipantResults(scores) {
 }
 
 async function submitResults() {
+  el["completion-message"].hidden = true;
+  el["save-result"].hidden = false;
   el["save-status"].className = "save-status saving";
-  el["save-status"].textContent = "در حال ذخیره امن نتایج…";
+  el["save-status"].textContent = "در حال ثبت پاسخ‌های شما…";
   el["retry-save-button"].hidden = true;
   try {
     await saveParticipantResults(state.scores);
-    el["save-status"].className = "save-status saved";
-    el["save-status"].textContent = "نتایج شما با موفقیت ذخیره شد.";
+    el["save-result"].hidden = true;
+    el["completion-message"].hidden = false;
   } catch (error) {
     console.error("Unable to save completed IAT results.", error);
     el["save-status"].className = "save-status failed";
@@ -389,13 +391,6 @@ function finish() {
   const scores = { ...state.participant, ...calculateScores() };
   state.scores = scores;
   el.task.hidden = true; el.summary.hidden = false;
-  const valid = Number.isFinite(scores.D_score);
-  el["d-score"].textContent = valid ? scores.D_score.toFixed(3) : "محاسبه‌نشده";
-  const magnitude = !valid || Math.abs(scores.D_score) <= .15 ? "تقریباً هیچ یا میزان ناچیزی از" : Math.abs(scores.D_score) >= .65 ? "میزان زیادی از" : Math.abs(scores.D_score) > .35 ? "میزان متوسطی از" : "اندکی";
-  const preferred = scores.D_score >= 0 ? CONFIG.categories.targetA.label : CONFIG.categories.targetB.label;
-  const notPreferred = scores.D_score >= 0 ? CONFIG.categories.targetB.label : CONFIG.categories.targetA.label;
-  el.interpretation.textContent = valid ? `نمرهٔ آزمون تداعی ضمنی (D) شما ${scores.D_score.toFixed(3)} بود. این نمره نشان‌دهندهٔ ${magnitude} ترجیح خودکار برای تداعی «${preferred}» با «${CONFIG.categories.attributeA.label}» به‌جای «${CONFIG.categories.attributeB.label}»، و «${notPreferred}» با «${CONFIG.categories.attributeB.label}» به‌جای «${CONFIG.categories.attributeA.label}» است.` : "نمره قابل محاسبه نبود.";
-  el["quality-metrics"].innerHTML = `<dt>دقت پاسخ اولیه</dt><dd>${scores.percentCorrect.toFixed(1)}٪</dd><dt>پاسخ‌های کمتر از ۳۰۰ میلی‌ثانیه</dt><dd>${(scores.propRT300 * 100).toFixed(1)}٪</dd><dt>نشانگر حذف به‌دلیل پاسخ‌های سریع</dt><dd>${scores.excludeCriteriaMet ? "بله" : "خیر"}</dd><dt>گروه موازنه‌سازی</dt><dd>${state.group}</dd>`;
   submitResults();
 }
 
@@ -409,7 +404,4 @@ el["left-response"].addEventListener("pointerdown", () => respond("left", "touch
 el["right-response"].addEventListener("pointerdown", () => respond("right", "touch"));
 el["demographic-form"].addEventListener("submit", start);
 el.age.addEventListener("input", () => { el["age-error"].hidden = isEligibleAge(el.age.value); });
-el["restart-button"].addEventListener("click", () => {
-  el.summary.hidden = true; el.intro.hidden = false;
-});
 el["retry-save-button"].addEventListener("click", submitResults);
