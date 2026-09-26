@@ -11,11 +11,15 @@ const html = fs.readFileSync(htmlPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
 const definitions = source.slice(0, source.indexOf('document.addEventListener("keydown"'));
 const requests = [];
+let responseStatus = 201;
 const context = {
   document: { querySelectorAll: () => [] },
   location: { search: "?group=1" },
   crypto: webcrypto, URL, URLSearchParams, console,
-  fetch: async (...args) => { requests.push(args); return { ok: true, status: 201 }; }
+  fetch: async (...args) => {
+    requests.push(args);
+    return { ok: responseStatus >= 200 && responseStatus < 300, status: responseStatus };
+  }
 };
 vm.createContext(context);
 vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
@@ -101,7 +105,18 @@ assert.equal(requestUrl, "https://iiogctpamxbomtjdzred.supabase.co/rest/v1/parti
 assert.equal(requestOptions.method, "POST");
 assert.equal(requestOptions.headers.apikey, "sb_publishable_BOV3oSNFL9JqF2TWbKhABg_FR3oon3d");
 assert.equal(requestOptions.headers.Authorization, `Bearer ${requestOptions.headers.apikey}`);
+assert.equal(requestOptions.headers.Prefer, "return=minimal", "the insert must not request the inserted row or upsert existing data");
+assert.doesNotMatch(requestOptions.headers.Prefer, /return=representation|resolution=/);
 assert.equal(requestOptions.body, JSON.stringify(mappedRow));
+
+responseStatus = 204;
+await saveParticipantResults(resultRow);
+responseStatus = 200;
+await assert.rejects(
+  saveParticipantResults(resultRow),
+  /Supabase request failed with status 200/,
+  "only PostgREST's successful INSERT statuses should be accepted"
+);
 
 function simulatedTrials(group, compatibleRt, incompatibleRt) {
   const parts = group === 1
