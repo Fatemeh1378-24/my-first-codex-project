@@ -10,11 +10,17 @@ const source = fs.readFileSync(appPath, "utf8");
 const html = fs.readFileSync(htmlPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
 const definitions = source.slice(0, source.indexOf('document.addEventListener("keydown"'));
-const context = { document: { querySelectorAll: () => [] }, location: { search: "?group=1" }, crypto: webcrypto, URL, URLSearchParams, console };
+const requests = [];
+const context = {
+  document: { querySelectorAll: () => [] },
+  location: { search: "?group=1" },
+  crypto: webcrypto, URL, URLSearchParams, console,
+  fetch: async (...args) => { requests.push(args); return { ok: true, status: 201 }; }
+};
 vm.createContext(context);
-vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
+vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
 
-const { buildSequence, instructionFor, calculateScores, generateParticipantId, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
+const { buildSequence, instructionFor, calculateScores, generateParticipantId, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
 const phrase = {
   attributeA: "یک کلمه خوب",
   attributeB: "یک کلمه بد",
@@ -61,6 +67,22 @@ assert.equal(state.participant.Group, SESSION_GROUP);
 assert.equal(SESSION_GROUP, 1, "query-string counterbalancing assignment should be preserved");
 assert.match(source, /state\.trials\.push\(\{ \.\.\.state\.participant, \.\.\.trial \}\)/, "raw trials must carry the session metadata");
 assert.match(source, /scores = \{ \.\.\.state\.participant, \.\.\.calculateScores\(\) \}/, "score outputs must carry the session metadata");
+assert.match(source, /fetch\(`\$\{SUPABASE_URL\}\/rest\/v1\/participants`/, "completed results must target public.participants through Supabase REST");
+assert.match(source, /apikey: SUPABASE_PUBLISHABLE_KEY/);
+assert.match(source, /Authorization: `Bearer \$\{SUPABASE_PUBLISHABLE_KEY\}`/);
+assert.match(source, /body: JSON\.stringify\(scores\)/, "the completed participant score row must be submitted");
+assert.match(html, /id="save-status"[^>]*class="save-status"/);
+assert.match(html, /id="retry-save-button"/);
+
+const resultRow = { Participant_ID: SESSION_PARTICIPANT_ID, Group: 1, D_score: 0.42 };
+await saveParticipantResults(resultRow);
+assert.equal(requests.length, 1);
+const [requestUrl, requestOptions] = requests[0];
+assert.equal(requestUrl, "https://iiogctpamxbomtjdzred.supabase.co/rest/v1/participants");
+assert.equal(requestOptions.method, "POST");
+assert.equal(requestOptions.headers.apikey, "sb_publishable_BOV3oSNFL9JqF2TWbKhABg_FR3oon3d");
+assert.equal(requestOptions.headers.Authorization, `Bearer ${requestOptions.headers.apikey}`);
+assert.deepEqual(JSON.parse(requestOptions.body), resultRow);
 
 function simulatedTrials(group, compatibleRt, incompatibleRt) {
   const parts = group === 1
