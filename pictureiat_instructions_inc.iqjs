@@ -71,7 +71,8 @@ Note: expressions used to assign the correct label to the left and right respons
 / vAlign = top
 / hAlign = left
 / position = (5%, 12%)
-/ fontStyle = ("Arial", 5%)
+/ txColor = white
+/ fontStyle = ("Vazirmatn", 5%, true)
 </text>
 
 <text orRight>
@@ -79,7 +80,8 @@ Note: expressions used to assign the correct label to the left and right respons
 / vAlign = top
 / hAlign = right
 / position = (95%, 12%)
-/ fontStyle = ("Arial", 5%)
+/ txColor = white
+/ fontStyle = ("Vazirmatn", 5%, true)
 </text>
 
 <text spacebar>

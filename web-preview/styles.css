@@ -76,7 +76,8 @@ kbd { background: #fff; color: #111; border-radius: 5px; padding: 2px 7px; font-
 .category-right { right: 0; text-align: right; direction: rtl; }
 .response-cue { display: flex; flex-direction: column; margin-top: .55em; color: var(--muted); font-family: Vazirmatn, Tahoma, Arial, sans-serif; font-size: clamp(.72rem, 2vw, 1rem); font-weight: 700; line-height: 1.45; }
 .attribute-label { color: var(--green); }
-.joiner { display: block; color: #ddd; font-size: .65em; font-weight: 400; margin: 5px 0; }
+.combined-label, .combined-label .attribute-label, .combined-label .joiner, .combined-label .target-label { color: #fff; }
+.joiner { display: block; font-size: .65em; font-weight: 700; margin: 5px 0; }
 .stimulus { font-size: clamp(2.3rem, 8vw, 5rem); font-weight: 800; text-align: center; }
 .stimulus.word { color: var(--green); }
 .stimulus img { display: block; width: auto; height: auto; max-width: min(80vw, 250px); max-height: min(48vh, 360px); object-fit: contain; object-position: center; }
