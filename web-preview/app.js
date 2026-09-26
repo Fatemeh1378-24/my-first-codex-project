@@ -151,8 +151,8 @@ function labelsFor(block) {
   const rightTarget = block.targetAOnLeft ? c.targetB.label : c.targetA.label;
   if (block.kind === "target") return { left: leftTarget, right: rightTarget };
   return {
-    left: `<span class="attribute-label">${c.attributeA.label}</span><span class="joiner">یا</span>${leftTarget}`,
-    right: `<span class="attribute-label">${c.attributeB.label}</span><span class="joiner">یا</span>${rightTarget}`
+    left: `<span class="combined-label"><span class="attribute-label">${c.attributeA.label}</span><span class="joiner">یا</span><span class="target-label">${leftTarget}</span></span>`,
+    right: `<span class="combined-label"><span class="attribute-label">${c.attributeB.label}</span><span class="joiner">یا</span><span class="target-label">${rightTarget}</span></span>`
   };
 }
 

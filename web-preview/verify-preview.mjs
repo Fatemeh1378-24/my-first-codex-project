@@ -57,7 +57,13 @@ for (const group of [1, 2]) {
       assert.ok(instruction.includes(`کلید <strong>${response.key}</strong> مربوط به پاسخ ${response.sideLabel}`), `group ${group}, block ${block.part}, ${side} key`);
       assert.ok(instruction.includes(`دکمه ${response.sideLabel} صفحه را لمس کنید`), `group ${group}, block ${block.part}, ${side} touch control`);
     }
-    if (block.kind === "combined") assert.match(instruction, / یا /);
+    if (block.kind === "combined") {
+      assert.match(instruction, / یا /);
+      assert.match(labels.left, /^<span class="combined-label"><span class="attribute-label">(?:خوب|بد)<\/span><span class="joiner">یا<\/span><span class="target-label">(?:ایرانی|افغان)<\/span><\/span>$/);
+      assert.match(labels.right, /^<span class="combined-label"><span class="attribute-label">(?:خوب|بد)<\/span><span class="joiner">یا<\/span><span class="target-label">(?:ایرانی|افغان)<\/span><\/span>$/);
+    } else {
+      assert.doesNotMatch(`${labels.left}${labels.right}`, /combined-label|joiner/, `group ${group}, block ${block.part}: combined styles stay scoped`);
+    }
     assert.equal((`${labels.left}${responseCue("left")}`.match(/data-response-side="left"/g) || []).length, 1, `group ${group}, block ${block.part}: one left cue`);
     assert.equal((`${labels.right}${responseCue("right")}`.match(/data-response-side="right"/g) || []).length, 1, `group ${group}, block ${block.part}: one right cue`);
   }
@@ -67,6 +73,10 @@ assert.equal(RESPONSES.left.code, "KeyE");
 assert.equal(RESPONSES.right.code, "KeyI");
 assert.match(responseCue("left"), />\(E\)<[\s\S]*>\(سمت چپ\)</);
 assert.match(responseCue("right"), />\(I\)<[\s\S]*>\(سمت راست\)</);
+assert.match(css, /\.combined-label, \.combined-label \.attribute-label, \.combined-label \.joiner, \.combined-label \.target-label \{ color: #fff; \}/);
+assert.match(css, /\.joiner \{[^}]*font-weight: 700;/);
+assert.match(css, /\.attribute-label \{ color: var\(--green\); \}/);
+assert.match(css, /\.response-cue \{[^}]*color: var\(--muted\);/);
 assert.match(source, /event\.code === RESPONSES\.left\.code\) respond\("left", "keyboard"\)/);
 assert.match(source, /event\.code === RESPONSES\.right\.code\) respond\("right", "keyboard"\)/);
 assert.match(source, /left-response"\]\.addEventListener\("pointerdown", \(\) => respond\("left", "touch"\)\)/);
@@ -75,11 +85,26 @@ assert.match(inquisit, /<trial attributeA>[\s\S]*?correctResponse = \("E"\)/);
 assert.match(inquisit, /<trial attributeB>[\s\S]*?correctResponse = \("I"\)/);
 assert.equal((inquisit.match(/<text leftResponseCueMixed>/g) || []).length, 1);
 assert.equal((inquisit.match(/<text rightResponseCueMixed>/g) || []).length, 1);
+for (const label of ["attributeALeftMixed", "attributeBRightMixed", "targetALeftMixed", "targetARightMixed", "targetBLeftMixed", "targetBRightMixed"]) {
+  const start = inquisit.indexOf(`<text ${label}>`);
+  const definition = inquisit.slice(start, inquisit.indexOf("</text>", start));
+  assert.match(definition, /txColor = white/, `${label}: combined category label remains white`);
+  assert.match(definition, /fontStyle = \("Vazirmatn", 5%\)/, `${label}: combined category label uses Vazirmatn`);
+}
+const instructionsSource = fs.readFileSync(new URL("../pictureiat_instructions_inc.iqjs", import.meta.url), "utf8");
+for (const joiner of ["orLeft", "orRight"]) {
+  const start = instructionsSource.indexOf(`<text ${joiner}>`);
+  const definition = instructionsSource.slice(start, instructionsSource.indexOf("</text>", start));
+  assert.match(definition, /txColor = white/, `${joiner}: combined connector is white`);
+  assert.match(definition, /fontStyle = \("Vazirmatn", 5%, true\)/, `${joiner}: combined connector is bold`);
+}
 for (const blockName of ["compatibleTest1", "compatibleTest2", "incompatibleTest1", "incompatibleTest2"]) {
   const start = inquisit.indexOf(`<block ${blockName}>`);
   const block = inquisit.slice(start, inquisit.indexOf("</block>", start));
   assert.equal((block.match(/leftResponseCueMixed/g) || []).length, 1, `${blockName}: one left cue`);
   assert.equal((block.match(/rightResponseCueMixed/g) || []).length, 1, `${blockName}: one right cue`);
+  assert.equal((block.match(/attributeALeftMixed/g) || []).length, 1, `${blockName}: combined left attribute style`);
+  assert.equal((block.match(/attributeBRightMixed/g) || []).length, 1, `${blockName}: combined right attribute style`);
 }
 
 assert.match(html, /id="left-response"[\s\S]*?<span class="key">E<\/span>/);
