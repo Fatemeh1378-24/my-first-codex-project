@@ -9,6 +9,7 @@ const cssPath = new URL("styles.css", import.meta.url);
 const source = fs.readFileSync(appPath, "utf8");
 const html = fs.readFileSync(htmlPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
+const inquisit = fs.readFileSync(new URL("../pictureiat_inc.iqjs", import.meta.url), "utf8");
 const definitions = source.slice(0, source.indexOf('document.addEventListener("keydown"'));
 const requests = [];
 let responseStatus = 201;
@@ -22,9 +23,9 @@ const context = {
   }
 };
 vm.createContext(context);
-vm.runInContext(`${definitions}\nthis.preview = { buildSequence, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
+vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
 
-const { buildSequence, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
+const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
 const phrase = {
   attributeA: "یک کلمه خوب",
   attributeB: "یک کلمه بد",
@@ -41,6 +42,7 @@ for (const group of [1, 2]) {
   const blocks = buildSequence(group);
   assert.equal(blocks.length, 7, `group ${group} should retain seven blocks`);
   for (const block of blocks) {
+    const labels = labelsFor(block);
     const instruction = instructionFor(block);
     assert.match(instruction, /لطفاً تا حد امکان سریع پاسخ دهید./);
     assert.doesNotMatch(instruction, /با دقت|اشتباه کمتری|کمتر اشتباه|خطای کمتر|مواردی که به دسته/);
@@ -56,7 +58,28 @@ for (const group of [1, 2]) {
       assert.ok(instruction.includes(`دکمه ${response.sideLabel} صفحه را لمس کنید`), `group ${group}, block ${block.part}, ${side} touch control`);
     }
     if (block.kind === "combined") assert.match(instruction, / یا /);
+    assert.equal((`${labels.left}${responseCue("left")}`.match(/data-response-side="left"/g) || []).length, 1, `group ${group}, block ${block.part}: one left cue`);
+    assert.equal((`${labels.right}${responseCue("right")}`.match(/data-response-side="right"/g) || []).length, 1, `group ${group}, block ${block.part}: one right cue`);
   }
+}
+
+assert.equal(RESPONSES.left.code, "KeyE");
+assert.equal(RESPONSES.right.code, "KeyI");
+assert.match(responseCue("left"), />\(E\)<[\s\S]*>\(سمت چپ\)</);
+assert.match(responseCue("right"), />\(I\)<[\s\S]*>\(سمت راست\)</);
+assert.match(source, /event\.code === RESPONSES\.left\.code\) respond\("left", "keyboard"\)/);
+assert.match(source, /event\.code === RESPONSES\.right\.code\) respond\("right", "keyboard"\)/);
+assert.match(source, /left-response"\]\.addEventListener\("pointerdown", \(\) => respond\("left", "touch"\)\)/);
+assert.match(source, /right-response"\]\.addEventListener\("pointerdown", \(\) => respond\("right", "touch"\)\)/);
+assert.match(inquisit, /<trial attributeA>[\s\S]*?correctResponse = \("E"\)/);
+assert.match(inquisit, /<trial attributeB>[\s\S]*?correctResponse = \("I"\)/);
+assert.equal((inquisit.match(/<text leftResponseCueMixed>/g) || []).length, 1);
+assert.equal((inquisit.match(/<text rightResponseCueMixed>/g) || []).length, 1);
+for (const blockName of ["compatibleTest1", "compatibleTest2", "incompatibleTest1", "incompatibleTest2"]) {
+  const start = inquisit.indexOf(`<block ${blockName}>`);
+  const block = inquisit.slice(start, inquisit.indexOf("</block>", start));
+  assert.equal((block.match(/leftResponseCueMixed/g) || []).length, 1, `${blockName}: one left cue`);
+  assert.equal((block.match(/rightResponseCueMixed/g) || []).length, 1, `${blockName}: one right cue`);
 }
 
 assert.match(html, /id="left-response"[\s\S]*?<span class="key">E<\/span>/);

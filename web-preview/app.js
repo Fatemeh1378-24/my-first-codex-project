@@ -156,6 +156,11 @@ function labelsFor(block) {
   };
 }
 
+function responseCue(side) {
+  const response = RESPONSES[side];
+  return `<span class="response-cue" data-response-side="${side}"><span dir="ltr">(${response.key})</span><span dir="rtl">(${response.sideLabel})</span></span>`;
+}
+
 function instructionFor(block) {
   const c = CONFIG.categories;
   const heading = `<h2>بخش ${block.part} از ۷</h2>`;
@@ -212,7 +217,8 @@ function start(event) {
 function showInstruction() {
   const block = state.blocks[state.blockIndex];
   const labels = labelsFor(block);
-  el["left-category"].innerHTML = labels.left; el["right-category"].innerHTML = labels.right;
+  el["left-category"].innerHTML = `${labels.left}${responseCue("left")}`;
+  el["right-category"].innerHTML = `${labels.right}${responseCue("right")}`;
   el["part-label"].textContent = `بخش ${block.part} از ۷`;
   el["trial-label"].textContent = "دستورالعمل‌ها";
   el["progress-fill"].style.width = `${(state.blockIndex / state.blocks.length) * 100}%`;
