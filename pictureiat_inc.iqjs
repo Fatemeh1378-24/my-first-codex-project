@@ -594,6 +594,39 @@ expressions.Gender_RT_Difference, expressions.Same_Gender_Advantage)
 / fontStyle = ("Arial", 5%)
 </text>
 
+//Response-key cues remain attached to response sides when target categories reverse.
+<text leftResponseCue>
+/ items = ("(E)~n(سمت چپ)")
+/ vAlign = top
+/ hAlign = left
+/ position = (5%, 14%)
+/ fontStyle = ("Vazirmatn", 2.5%)
+</text>
+
+<text rightResponseCue>
+/ items = ("(I)~n(سمت راست)")
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 14%)
+/ fontStyle = ("Vazirmatn", 2.5%)
+</text>
+
+<text leftResponseCueMixed>
+/ items = ("(E)~n(سمت چپ)")
+/ vAlign = top
+/ hAlign = left
+/ position = (5%, 29%)
+/ fontStyle = ("Vazirmatn", 2.5%)
+</text>
+
+<text rightResponseCueMixed>
+/ items = ("(I)~n(سمت راست)")
+/ vAlign = top
+/ hAlign = right
+/ position = (95%, 29%)
+/ fontStyle = ("Vazirmatn", 2.5%)
+</text>
+
 
 **************************************************************************************************************
 **************************************************************************************************************
@@ -692,7 +725,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </script>
 
 <block attributePractice>
-/ bgStim = (attributeALeft, attributeBRight)
+/ bgStim = (attributeALeft, leftResponseCue, attributeBRight, rightResponseCue)
 / trials = [
 	1=instructions;
 	2-21 = random(attributeA, attributeB);
@@ -702,7 +735,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block targetCompatiblePractice>
-/ bgStim = (targetALeft, targetBRight)
+/ bgStim = (targetALeft, leftResponseCue, targetBRight, rightResponseCue)
 / trials = [
 	1=instructions;
 	2-21 = random(targetALeft, targetBRight);
@@ -712,7 +745,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block targetIncompatiblePractice>
-/ bgStim = (targetARight, targetBLeft)
+/ bgStim = (targetARight, rightResponseCue, targetBLeft, leftResponseCue)
 / trials = [
 	1=instructions;
 	2-21 = random(targetARight, targetBLeft);
@@ -722,7 +755,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block targetCompatiblePracticeSwitch>
-/ bgStim = (targetALeft, targetBRight)
+/ bgStim = (targetALeft, leftResponseCue, targetBRight, rightResponseCue)
 / trials = [
 	1=instructions;
 	2-41 = random(targetALeft, targetBRight);
@@ -732,7 +765,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block targetIncompatiblePracticeSwitch>
-/ bgStim = (targetARight, targetBLeft)
+/ bgStim = (targetARight, rightResponseCue, targetBLeft, leftResponseCue)
 / trials = [
 	1=instructions;
 	2-41 = random(targetARight, targetBLeft);
@@ -742,7 +775,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block compatibleTest1>
-/ bgStim = (targetALeftMixed, orLeft, attributeALeft, targetBRightMixed, orRight, attributeBRight)
+/ bgStim = (targetALeftMixed, orLeft, attributeALeft, leftResponseCueMixed, targetBRightMixed, orRight, attributeBRight, rightResponseCueMixed)
 / trials = [
 	1=instructions;
 	3,5,7,9,11,13,15,17,19,21= random(targetALeft, targetBRight);
@@ -755,7 +788,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block compatibleTest2>
-/ bgStim = (targetALeftMixed, orLeft, attributeALeft, targetBRightMixed, orRight, attributeBRight)
+/ bgStim = (targetALeftMixed, orLeft, attributeALeft, leftResponseCueMixed, targetBRightMixed, orRight, attributeBRight, rightResponseCueMixed)
 / trials = [
   2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40 = random(targetALeft, targetBRight);
   1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39 = random(attributeA, attributeB)]
@@ -767,7 +800,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block incompatibleTest1>
-/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, targetARightMixed, orRight, attributeBRight)
+/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, leftResponseCueMixed, targetARightMixed, orRight, attributeBRight, rightResponseCueMixed)
 / trials = [
 	1=instructions;
 	3,5,7,9,11,13,15,17,19,21 = random(targetBLeft, targetARight);
@@ -780,7 +813,7 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block incompatibleTest2>
-/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, targetARightMixed, orRight, attributeBRight)
+/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, leftResponseCueMixed, targetARightMixed, orRight, attributeBRight, rightResponseCueMixed)
 / trials = [
   2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40 = random(targetBLeft, targetARight);
   1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39 = random(attributeA, attributeB)]
@@ -792,13 +825,13 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 </block>
 
 <block compatibleTestInstructions>
-/ bgStim = (targetALeftMixed, orLeft, attributeALeft, targetBRightMixed, orRight, attributeBRight)
+/ bgStim = (targetALeftMixed, orLeft, attributeALeft, leftResponseCueMixed, targetBRightMixed, orRight, attributeBRight, rightResponseCueMixed)
 / trials = [1=instructions]
 / recordData = false
 </block>
 
 <block incompatibleTestInstructions>
-/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, targetARightMixed, orRight, attributeBRight)
+/ bgStim = (targetBLeftMixed, orLeft, attributeALeft, leftResponseCueMixed, targetARightMixed, orRight, attributeBRight, rightResponseCueMixed)
 / trials = [1=instructions]
 / recordData = false
 </block>
