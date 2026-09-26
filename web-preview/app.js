@@ -320,11 +320,13 @@ async function saveParticipantResults(scores) {
       apikey: SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
       "Content-Type": "application/json",
-      Prefer: "return=minimal,resolution=merge-duplicates"
+      Prefer: "return=minimal"
     },
     body: JSON.stringify(participantInsertPayload(scores))
   });
-  if (!response.ok) throw new Error(`Supabase request failed with status ${response.status}`);
+  if (response.status !== 201 && response.status !== 204) {
+    throw new Error(`Supabase request failed with status ${response.status}`);
+  }
 }
 
 async function submitResults() {
