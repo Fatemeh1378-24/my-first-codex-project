@@ -48,19 +48,15 @@
       </section>
 
       <section id="summary" class="panel summary" hidden>
-        <p class="eyebrow">پیش‌نمایش به پایان رسید</p>
-        <h1>نتایج شما</h1>
-        <div class="score-card"><span>نمرهٔ D آزمون تداعی ضمنی</span><strong id="d-score">—</strong></div>
-        <p id="interpretation"></p>
-        <dl id="quality-metrics" class="metrics"></dl>
+        <div id="completion-message" class="completion-message" hidden>
+          <h1>از مشارکت شما در این پژوهش سپاسگزاریم.</h1>
+          <p>پاسخ‌های شما با موفقیت ثبت شد.</p>
+          <p>اطلاعات ثبت‌شده صرفاً در چارچوب اهداف این پژوهش مورد استفاده قرار خواهد گرفت.</p>
+        </div>
         <div class="save-result" role="status" aria-live="polite">
           <span id="save-status" class="save-status"></span>
           <button id="retry-save-button" class="secondary-button retry-save-button" type="button" hidden>تلاش دوباره برای ذخیره</button>
         </div>
-        <div class="summary-actions">
-          <button id="restart-button" class="secondary-button" type="button">اجرای دوباره</button>
-        </div>
-        <p class="fine-print">نتایج تکمیل‌شده با شناسه ناشناس شرکت‌کننده ذخیره می‌شوند. این پیش‌نمایش مرورگر برای کاربرد بالینی یا تشخیصی نیست.</p>
       </section>
     </main>
     <script src="app.js"></script>
