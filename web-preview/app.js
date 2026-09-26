@@ -19,8 +19,28 @@ const RESPONSES = {
   right: { key: "I", code: "KeyI", sideLabel: "سمت راست" }
 };
 
+function generateParticipantId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") return globalThis.crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map(value => value.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
+// Created once when this participant session loads. Restarting the IAT does not
+// change either identifier or counterbalancing assignment.
+const SESSION_PARTICIPANT_ID = generateParticipantId();
+const requestedGroup = Number(new URLSearchParams(location.search).get("group"));
+const SESSION_GROUP = requestedGroup === 1 || requestedGroup === 2 ? requestedGroup : (Math.random() < .5 ? 1 : 2);
+
 const el = Object.fromEntries([...document.querySelectorAll("[id]")].map(node => [node.id, node]));
-const state = { blocks: [], blockIndex: 0, trialIndex: 0, trials: [], awaitingCorrection: false, locked: false, startedAt: 0, group: 1 };
+const state = {
+  blocks: [], blockIndex: 0, trialIndex: 0, trials: [], awaitingCorrection: false, locked: false, startedAt: 0,
+  group: SESSION_GROUP,
+  participant: { Participant_ID: SESSION_PARTICIPANT_ID, Group: SESSION_GROUP, Gender: "prefer_not_to_say" }
+};
 
 function shuffled(values) {
   const copy = [...values];
@@ -142,8 +162,6 @@ function instructionFor(block) {
 }
 
 function start() {
-  const requested = Number(new URLSearchParams(location.search).get("group"));
-  state.group = requested === 1 || requested === 2 ? requested : (Math.random() < .5 ? 1 : 2);
   state.blocks = buildSequence(state.group);
   state.blockIndex = 0; state.trialIndex = 0; state.trials = []; state.locked = false;
   el.intro.hidden = true; el.summary.hidden = true; el.task.hidden = false;
@@ -208,7 +226,7 @@ function respond(side, method) {
   trial.part = block.part;
   trial.condition = block.targetAOnLeft ? "compatible" : "incompatible";
   trial.blockLength = block.count === 20 ? "short" : "long";
-  state.trials.push({ ...trial });
+  state.trials.push({ ...state.participant, ...trial });
   el.error.hidden = true; el.stimulus.innerHTML = "";
   window.setTimeout(nextTrial, CONFIG.isiMs);
 }
@@ -229,38 +247,59 @@ function sampleSd(values) {
   return Math.sqrt(values.reduce((sum, value) => sum + (value - avg) ** 2, 0) / (values.length - 1));
 }
 
-function calculateScores() {
-  const testTrials = state.trials.filter(t => [3, 4, 6, 7].includes(t.part));
+function calculateScores(trials = state.trials, participantGender = state.participant?.Gender ?? "prefer_not_to_say") {
+  // Millisecond's correction-required variant records latency to the final,
+  // correct response. Accordingly, t.latency (not firstLatency) is scored.
+  const testTrials = trials.filter(t => [3, 4, 6, 7].includes(t.part));
   const eligible = testTrials.filter(t => t.latency <= 10000);
   const cells = {};
   for (const condition of ["compatible", "incompatible"]) for (const length of ["short", "long"])
     cells[`${condition}-${length}`] = eligible.filter(t => t.condition === condition && t.blockLength === length).map(t => t.latency);
   const shortPooled = [...cells["compatible-short"], ...cells["incompatible-short"]];
   const longPooled = [...cells["compatible-long"], ...cells["incompatible-long"]];
-  const da = (mean(cells["incompatible-short"]) - mean(cells["compatible-short"])) / sampleSd(shortPooled);
-  const db = (mean(cells["incompatible-long"]) - mean(cells["compatible-long"])) / sampleSd(longPooled);
+  // Reversed minus Iranian+Good makes positive D mean a pro-Iranian association,
+  // regardless of which condition was presented first.
+  const D_short = (mean(cells["incompatible-short"]) - mean(cells["compatible-short"])) / sampleSd(shortPooled);
+  const D_long = (mean(cells["incompatible-long"]) - mean(cells["compatible-long"])) / sampleSd(longPooled);
+  const faceMean = (nationality, gender) => mean(eligible
+    .filter(t => t.category === nationality && new RegExp(`_${gender}[0-9]+\\.jpg$`, "i").test(t.value))
+    .map(t => t.latency));
+  const Mean_RT_Iranian_Female = faceMean("targetA", "F");
+  const Mean_RT_Iranian_Male = faceMean("targetA", "M");
+  const Mean_RT_Afghan_Female = faceMean("targetB", "F");
+  const Mean_RT_Afghan_Male = faceMean("targetB", "M");
+  const Mean_RT_Female_Faces = mean(eligible.filter(t => /^target/.test(t.category) && /_F[0-9]+\.jpg$/i.test(t.value)).map(t => t.latency));
+  const Mean_RT_Male_Faces = mean(eligible.filter(t => /^target/.test(t.category) && /_M[0-9]+\.jpg$/i.test(t.value)).map(t => t.latency));
+  const Gender_RT_Difference = Mean_RT_Male_Faces - Mean_RT_Female_Faces;
+  const Same_Gender_Advantage = participantGender === "female" ? Gender_RT_Difference
+    : participantGender === "male" ? -Gender_RT_Difference : null;
   return {
-    da, db, d: (da + db) / 2,
+    D_score: (D_short + D_long) / 2, D_short, D_long,
     percentCorrect: mean(eligible.map(t => t.initialCorrect ? 1 : 0)) * 100,
-    propRT300: mean(testTrials.map(t => t.latency < 300 ? 1 : 0))
+    propRT300: mean(testTrials.map(t => t.latency < 300 ? 1 : 0)),
+    excludeCriteriaMet: mean(testTrials.map(t => t.latency < 300 ? 1 : 0)) > 0.10,
+    Mean_RT_Iranian_Female, Mean_RT_Iranian_Male,
+    Mean_RT_Afghan_Female, Mean_RT_Afghan_Male,
+    Mean_RT_Female_Faces, Mean_RT_Male_Faces,
+    Gender_RT_Difference, Same_Gender_Advantage
   };
 }
 
 function finish() {
-  const scores = calculateScores();
+  const scores = { ...state.participant, ...calculateScores() };
   state.scores = scores;
   el.task.hidden = true; el.summary.hidden = false;
-  const valid = Number.isFinite(scores.d);
-  el["d-score"].textContent = valid ? scores.d.toFixed(3) : "محاسبه‌نشده";
-  const magnitude = !valid || Math.abs(scores.d) <= .15 ? "تقریباً هیچ یا میزان ناچیزی از" : Math.abs(scores.d) >= .65 ? "میزان زیادی از" : Math.abs(scores.d) > .35 ? "میزان متوسطی از" : "اندکی";
-  const preferred = scores.d >= 0 ? CONFIG.categories.targetA.label : CONFIG.categories.targetB.label;
-  const notPreferred = scores.d >= 0 ? CONFIG.categories.targetB.label : CONFIG.categories.targetA.label;
-  el.interpretation.textContent = valid ? `نمرهٔ آزمون تداعی ضمنی (D) شما ${scores.d.toFixed(3)} بود. این نمره نشان‌دهندهٔ ${magnitude} ترجیح خودکار برای تداعی «${preferred}» با «${CONFIG.categories.attributeA.label}» به‌جای «${CONFIG.categories.attributeB.label}»، و «${notPreferred}» با «${CONFIG.categories.attributeB.label}» به‌جای «${CONFIG.categories.attributeA.label}» است.` : "نمره قابل محاسبه نبود.";
-  el["quality-metrics"].innerHTML = `<dt>دقت پاسخ اولیه</dt><dd>${scores.percentCorrect.toFixed(1)}٪</dd><dt>پاسخ‌های کمتر از ۳۰۰ میلی‌ثانیه</dt><dd>${(scores.propRT300 * 100).toFixed(1)}٪</dd><dt>نشانگر حذف به‌دلیل پاسخ‌های سریع</dt><dd>${scores.propRT300 > .1 ? "بله" : "خیر"}</dd><dt>گروه موازنه‌سازی</dt><dd>${state.group}</dd>`;
+  const valid = Number.isFinite(scores.D_score);
+  el["d-score"].textContent = valid ? scores.D_score.toFixed(3) : "محاسبه‌نشده";
+  const magnitude = !valid || Math.abs(scores.D_score) <= .15 ? "تقریباً هیچ یا میزان ناچیزی از" : Math.abs(scores.D_score) >= .65 ? "میزان زیادی از" : Math.abs(scores.D_score) > .35 ? "میزان متوسطی از" : "اندکی";
+  const preferred = scores.D_score >= 0 ? CONFIG.categories.targetA.label : CONFIG.categories.targetB.label;
+  const notPreferred = scores.D_score >= 0 ? CONFIG.categories.targetB.label : CONFIG.categories.targetA.label;
+  el.interpretation.textContent = valid ? `نمرهٔ آزمون تداعی ضمنی (D) شما ${scores.D_score.toFixed(3)} بود. این نمره نشان‌دهندهٔ ${magnitude} ترجیح خودکار برای تداعی «${preferred}» با «${CONFIG.categories.attributeA.label}» به‌جای «${CONFIG.categories.attributeB.label}»، و «${notPreferred}» با «${CONFIG.categories.attributeB.label}» به‌جای «${CONFIG.categories.attributeA.label}» است.` : "نمره قابل محاسبه نبود.";
+  el["quality-metrics"].innerHTML = `<dt>دقت پاسخ اولیه</dt><dd>${scores.percentCorrect.toFixed(1)}٪</dd><dt>پاسخ‌های کمتر از ۳۰۰ میلی‌ثانیه</dt><dd>${(scores.propRT300 * 100).toFixed(1)}٪</dd><dt>نشانگر حذف به‌دلیل پاسخ‌های سریع</dt><dd>${scores.excludeCriteriaMet ? "بله" : "خیر"}</dd><dt>گروه موازنه‌سازی</dt><dd>${state.group}</dd>`;
 }
 
 function downloadData() {
-  const payload = { previewVersion: 1, completedAt: new Date().toISOString(), group: state.group, scores: state.scores, trials: state.trials };
+  const payload = { previewVersion: 2, completedAt: new Date().toISOString(), participant: state.participant, scores: state.scores, trials: state.trials };
   const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
   const link = Object.assign(document.createElement("a"), { href: url, download: `race-iat-preview-${Date.now()}.json` });
   link.click(); URL.revokeObjectURL(url);

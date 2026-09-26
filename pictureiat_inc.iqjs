@@ -279,7 +279,12 @@ trialCode, trialNum, values.conditionOrder,
 response, correct, latency, 
 stimulusnumber, stimulusitem, 
 expressions.da, expressions.db, expressions.d, expressions.percentCorrect, 
-expressions.propRT300, expressions.excludeCriteriaMet)
+expressions.propRT300, expressions.excludeCriteriaMet,
+expressions.D_short, expressions.D_long, expressions.D_score,
+expressions.Mean_RT_Iranian_Female, expressions.Mean_RT_Iranian_Male,
+expressions.Mean_RT_Afghan_Female, expressions.Mean_RT_Afghan_Male,
+expressions.Mean_RT_Female_Faces, expressions.Mean_RT_Male_Faces,
+expressions.Gender_RT_Difference, expressions.Same_Gender_Advantage)
 </data>
 
 ****************
@@ -291,7 +296,12 @@ summary data
 script.subjectId, script.groupId, script.sessionId, script.elapsedTime, 
 script.completed, values.conditionOrder,
 expressions.da, expressions.db, expressions.d, expressions.percentCorrect, 
-expressions.propRT300, expressions.excludeCriteriaMet)
+expressions.propRT300, expressions.excludeCriteriaMet,
+expressions.D_short, expressions.D_long, expressions.D_score,
+expressions.Mean_RT_Iranian_Female, expressions.Mean_RT_Iranian_Male,
+expressions.Mean_RT_Afghan_Female, expressions.Mean_RT_Afghan_Male,
+expressions.Mean_RT_Female_Faces, expressions.Mean_RT_Male_Faces,
+expressions.Gender_RT_Difference, expressions.Same_Gender_Advantage)
 </summaryData>
 
 **************************************************************************************************************
@@ -307,6 +317,7 @@ expressions.propRT300, expressions.excludeCriteriaMet)
 / progressWidth = 0
 / instructionIndex = -1
 / conditionOrder = ""
+/ gender = "prefer_not_to_say"
 </values>
 
 **************************************************************************************************************
@@ -355,6 +366,9 @@ expressions.propRT300, expressions.excludeCriteriaMet)
 / da = return ((expressions.m2A - expressions.m1A) / expressions.sda)
 / db = return ((expressions.m2B - expressions.m1B) / expressions.sdb)
 / d = return ((expressions.da + expressions.db) / 2)
+/ D_short = return expressions.da
+/ D_long = return expressions.db
+/ D_score = return expressions.d
 
 / percentCorrect = return (list.acc.mean*100)
 / progress = return pct(values.progressWidth)
@@ -363,6 +377,20 @@ expressions.propRT300, expressions.excludeCriteriaMet)
 	return 1;
 } else {
 	return 0;
+}
+/ Mean_RT_Iranian_Female = return list.rtIranianFemale.mean
+/ Mean_RT_Iranian_Male = return list.rtIranianMale.mean
+/ Mean_RT_Afghan_Female = return list.rtAfghanFemale.mean
+/ Mean_RT_Afghan_Male = return list.rtAfghanMale.mean
+/ Mean_RT_Female_Faces = return list.rtFemaleFaces.mean
+/ Mean_RT_Male_Faces = return list.rtMaleFaces.mean
+/ Gender_RT_Difference = return (expressions.Mean_RT_Male_Faces - expressions.Mean_RT_Female_Faces)
+/ Same_Gender_Advantage = if (values.gender == "female") {
+	return expressions.Gender_RT_Difference;
+} else if (values.gender == "male") {
+	return -expressions.Gender_RT_Difference;
+} else {
+	return null;
 }
 </expressions>
 
@@ -393,6 +421,14 @@ expressions.propRT300, expressions.excludeCriteriaMet)
 //stores accuracy of D-score qualifying responses
 <list acc>
 </list>
+
+//D-score-eligible face latencies, split by nationality and depicted gender
+<list rtIranianFemale></list>
+<list rtIranianMale></list>
+<list rtAfghanFemale></list>
+<list rtAfghanMale></list>
+<list rtFemaleFaces></list>
+<list rtMaleFaces></list>
 
 **************************************************************************************************************
 **************************************************************************************************************
@@ -639,12 +675,19 @@ function trialSummary(tempThis, compatibleLabel, blockNumber, trialValidity){
 		list["rt" + compatibleLabel + blockNumber].appendItem(tempThis.latency);
 		list["rtBlock" + blockNumber].appendItem(tempThis.latency);
 		list.acc.appendItem(tempThis.correct);		
+		var item = String(tempThis.stimulusItem);
+		if (item.indexOf("Iranian_F") >= 0) { list.rtIranianFemale.appendItem(tempThis.latency); list.rtFemaleFaces.appendItem(tempThis.latency); }
+		if (item.indexOf("Iranian_M") >= 0) { list.rtIranianMale.appendItem(tempThis.latency); list.rtMaleFaces.appendItem(tempThis.latency); }
+		if (item.indexOf("Afghan_F") >= 0) { list.rtAfghanFemale.appendItem(tempThis.latency); list.rtFemaleFaces.appendItem(tempThis.latency); }
+		if (item.indexOf("Afghan_M") >= 0) { list.rtAfghanMale.appendItem(tempThis.latency); list.rtMaleFaces.appendItem(tempThis.latency); }
 	}
-	if (tempThis.latency  < 300) {
-		list.rt300.appendItem(1);
-	} else {
-		list.rt300.appendItem(0);
-	}	
+	if (trialValidity) {
+		if (tempThis.latency < 300) {
+			list.rt300.appendItem(1);
+		} else {
+			list.rt300.appendItem(0);
+		}
+	}
 }
 </script>
 
