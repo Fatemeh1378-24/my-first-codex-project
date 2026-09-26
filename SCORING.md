@@ -48,15 +48,12 @@ marks its embedded instruction trial invalid for D, accuracy, and face means.
 Face means use retained face trials from the same four combined blocks. Filename
 suffixes `_F#` and `_M#` identify depicted gender. `Gender_RT_Difference` is male-face
 mean minus female-face mean. `Same_Gender_Advantage` is that difference for female
-participants, its negative for male participants, and `NA` (`null` in downloaded
-JSON) for participants who prefer not to say. Thus a positive value always means
+participants, its negative for male participants, and `NA` (`null` in the calculated
+output) for participants who prefer not to say. Thus a positive value always means
 faster responses to same-gender faces.
 
-Browser downloads contain a `participant` object (`Participant_ID`, `Group`, and
-`Gender`), a `scores` object ready for later questionnaire/demographic fields, and
-the raw trials. The browser generates an anonymous UUID when the participant session
-loads, never displays or accepts an ID field, and reuses that immutable ID for IAT
-restarts and every downloaded record in the session. `Gender` currently defaults to
-`prefer_not_to_say` until the later demographic flow sets it. Inquisit retains its
-native system-generated subject ID and group fields; `values.gender` is the extension
-point for that later demographic survey.
+Browser scoring keeps the participant metadata, calculated scores, and raw trials
+internally during the session, without exposing a participant-facing download. The
+browser generates an anonymous UUID when the participant session loads, never
+displays or accepts an ID field, and reuses that immutable ID for IAT restarts.
+Inquisit retains its native system-generated subject ID and group fields.
