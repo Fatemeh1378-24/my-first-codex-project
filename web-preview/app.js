@@ -51,8 +51,40 @@ const el = Object.fromEntries([...document.querySelectorAll("[id]")].map(node =>
 const state = {
   blocks: [], blockIndex: 0, trialIndex: 0, trials: [], awaitingCorrection: false, locked: false, startedAt: 0,
   group: SESSION_GROUP,
-  participant: { Participant_ID: SESSION_PARTICIPANT_ID, Group: SESSION_GROUP }
+  participant: { Participant_ID: SESSION_PARTICIPANT_ID, Group: SESSION_GROUP },
+  sdoResponses: {}, mfqResponses: {}, mfqDomainScores: {}
 };
+
+// The existing study specifies 16 SDO positions. Their labels remain isolated
+// here so the questionnaire flow does not affect IAT behavior or scoring.
+const SDO_ITEMS = Array.from({ length: 16 }, (_, index) => `SDO${String(index + 1).padStart(2, "0")}`);
+const SDO_RESPONSE_OPTIONS = [1, 2, 3, 4, 5, 6, 7].map(value => ({ value: String(value), label: String(value) }));
+
+function renderQuestionnaire(container, items, options) {
+  container.innerHTML = items.map((item, index) => {
+    const id = typeof item === "string" ? `sdo_${String(index + 1).padStart(2, "0")}` : item.id;
+    const text = typeof item === "string" ? item : item.text;
+    const choices = options.map(option => `<label class="scale-option"><input type="radio" name="${id}" value="${option.value}" required><span>${option.label}</span></label>`).join("");
+    return `<fieldset class="questionnaire-item" data-question="${id}"><legend>${index + 1}. ${text}</legend><div class="scale-options">${choices}</div></fieldset>`;
+  }).join("");
+}
+
+function collectRequiredResponses(form, items, errorElement) {
+  const data = new FormData(form);
+  const responses = {};
+  let firstMissing = null;
+  for (const item of items) {
+    const id = typeof item === "string" ? `sdo_${String(items.indexOf(item) + 1).padStart(2, "0")}` : item.id;
+    const fieldset = form.querySelector(`[data-question="${id}"]`);
+    const value = data.get(id);
+    fieldset.classList.toggle("missing", value === null);
+    if (value === null && !firstMissing) firstMissing = fieldset;
+    if (value !== null) responses[id] = Number(value);
+  }
+  errorElement.hidden = !firstMissing;
+  firstMissing?.scrollIntoView({ behavior: "smooth", block: "center" });
+  return firstMissing ? null : responses;
+}
 
 function isEligibleAge(value) {
   const age = Number(value);
@@ -355,7 +387,11 @@ function participantInsertPayload(scores) {
     mean_rt_female_faces: scores.Mean_RT_Female_Faces,
     mean_rt_male_faces: scores.Mean_RT_Male_Faces,
     gender_rt_difference: scores.Gender_RT_Difference,
-    same_gender_advantage: scores.Same_Gender_Advantage
+    same_gender_advantage: scores.Same_Gender_Advantage,
+    sdo_responses: state.sdoResponses,
+    sdo_score: state.sdoScore ?? null,
+    mfq_responses: state.mfqResponses,
+    mfq_domain_scores: state.mfqDomainScores
   };
 }
 
@@ -396,7 +432,33 @@ async function submitResults() {
 function finish() {
   const scores = { ...state.participant, ...calculateScores() };
   state.scores = scores;
-  el.task.hidden = true; el.summary.hidden = false;
+  el.task.hidden = true; el["post-iat-transition"].hidden = false;
+}
+
+function showSdo() {
+  el["post-iat-transition"].hidden = true;
+  el["sdo-questionnaire"].hidden = false;
+  scrollTo({ top: 0 });
+}
+
+function submitSdo(event) {
+  event.preventDefault();
+  const responses = collectRequiredResponses(event.currentTarget, SDO_ITEMS, el["sdo-error"]);
+  if (!responses) return;
+  state.sdoResponses = responses;
+  el["sdo-questionnaire"].hidden = true;
+  el["mfq-questionnaire"].hidden = false;
+  scrollTo({ top: 0 });
+}
+
+function submitMfq(event) {
+  event.preventDefault();
+  const responses = collectRequiredResponses(event.currentTarget, MFQ_QUESTIONNAIRE.items, el["mfq-error"]);
+  if (!responses) return;
+  state.mfqResponses = responses;
+  state.mfqDomainScores = MFQ_SCORING.calculate(responses);
+  el["mfq-questionnaire"].hidden = true;
+  el.summary.hidden = false;
   submitResults();
 }
 
@@ -411,3 +473,8 @@ el["right-response"].addEventListener("pointerdown", () => respond("right", "tou
 el["demographic-form"].addEventListener("submit", start);
 el.age.addEventListener("input", () => { el["age-error"].hidden = isEligibleAge(el.age.value); });
 el["retry-save-button"].addEventListener("click", submitResults);
+renderQuestionnaire(el["sdo-items"], SDO_ITEMS, SDO_RESPONSE_OPTIONS);
+renderQuestionnaire(el["mfq-items"], MFQ_QUESTIONNAIRE.items, MFQ_QUESTIONNAIRE.responseOptions);
+el["start-sdo-button"].addEventListener("click", showSdo);
+el["sdo-form"].addEventListener("submit", submitSdo);
+el["mfq-form"].addEventListener("submit", submitMfq);
