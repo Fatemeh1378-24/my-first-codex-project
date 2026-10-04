@@ -267,43 +267,45 @@ assert.equal(blockScores.block_4_mean_rt, (400 + 12050) / 2, "block means must n
 
 const sdo = vm.runInContext("SDO_QUESTIONNAIRE", context);
 const expectedSdoTexts = [
-  "بعضی از گروه‌های مردم باید سر جای خودشان نگه داشته شوند.",
-  "احتمالاً این خوب است که بعضی گروه‌ها در بالا و گروه‌های دیگر در پایین باشند.",
-  "یک جامعهٔ ایده‌آل مستلزم آن است که بعضی گروه‌ها در بالا و گروه‌های دیگر در پایین باشند.",
-  "بعضی از گروه‌های مردم صرفاً از گروه‌های دیگر پست‌ترند.",
-  "گروه‌هایی که در پایین قرار دارند، به همان اندازهٔ گروه‌های بالا شایسته‌اند.",
-  "هیچ گروهی نباید بر جامعه مسلط باشد.",
-  "گروه‌هایی که در پایین قرار دارند، نباید مجبور باشند سر جای خود بمانند.",
-  "سلطهٔ گروهی اصل نادرستی است.",
-  "نباید برای برابری گروه‌ها تلاش کنیم.",
-  "نباید تلاش کنیم تضمین شود که هر گروه از کیفیت زندگی یکسانی برخوردار است.",
-  "تلاش برای برابر کردن گروه‌ها ناعادلانه است.",
-  "برابری گروه‌ها نباید هدف اصلی ما باشد.",
-  "باید تلاش کنیم به همهٔ گروه‌ها فرصت برابری برای موفقیت بدهیم.",
-  "باید هر کاری از دستمان برمی‌آید انجام دهیم تا شرایط گروه‌های مختلف را برابر کنیم.",
-  "صرف‌نظر از اینکه چقدر تلاش لازم است، باید بکوشیم مطمئن شویم همهٔ گروه‌ها در زندگی فرصت یکسانی دارند.",
-  "برابری گروه‌ها باید آرمان ما باشد."
+  "برخی گروه‌های مردم، قطعاً از گروه‌های دیگر پایین‌تر هستند.",
+  "گاهی (اوقات) برای رسیدن به هدف، لازم است که از زور علیه دیگران استفاده کرد.",
+  "اشکالی ندارد اگر برخی گروه‌ها در زندگی از گروه‌های دیگر شانس بیشتری داشته باشند.",
+  "گاهی (اوقات) برای موفقیت در زندگی، لازم است گروه‌های دیگر کنار زده شوند.",
+  "اگر برخی گروه‌ها سر جای خودشان بودند، مشکلات کمتری می‌داشتیم.",
+  "اینکه برخی گروه‌ها (از لحاظ اجتماعی) در بالاترین و برخی در پایین‌ترین مرتبه هستند، احتمالاً خوب است.",
+  "گروه‌های پایین (از لحاظ اجتماعی) باید در جای خودشان باقی بمانند.",
+  "گاهی (اوقات) گروه‌های دیگر باید سر جای خودشان بمانند.",
+  "اگر گروه‌ها با هم برابر بودند، بهتر بود.",
+  "آرمان ما باید تساوی گروه‌ها باشد.",
+  "همه گروه‌ها باید در زندگی، شانس برابر داشته باشند.",
+  "ما باید برای برابر کردن شرایط برای گروه‌های متفاوت، آنچه می‌توانیم انجام دهیم.",
+  "برابری اجتماعی یک اصل است.",
+  "اگر با مردم یکسان رفتار می‌کردیم، مشکلات کمتری داشتیم.",
+  "ما باید تلاش کنیم تا آنجا که ممکن است درآمدها را برابر کنیم.",
+  "هیچ گروهی نباید (بر گروه‌های دیگر) در جامعه مسلط باشد."
 ];
 assert.equal(sdo.items.length, 16, "SDO must contain exactly 16 items");
 assert.deepEqual(Array.from(sdo.items, item => item.id), Array.from({ length: 16 }, (_, index) => `sdo_${String(index + 1).padStart(2, "0")}`));
-assert.deepEqual(Array.from(sdo.items, item => item.text), expectedSdoTexts, "all Persian SDO7 texts must remain exact and ordered");
+assert.deepEqual(Array.from(sdo.items, item => item.text), expectedSdoTexts, "all approved Persian SDO texts must remain exact and ordered");
 assert.deepEqual(Array.from(sdo.responseOptions, option => [option.value, option.label]), [
-  ["1", "کاملاً مخالفم"], ["2", "مخالفم"], ["3", "تا حدی مخالفم"], ["4", "نه موافقم و نه مخالف"],
-  ["5", "تا حدی موافقم"], ["6", "موافقم"], ["7", "کاملاً موافقم"]
+  ["1", "کاملاً مخالفم"], ["2", "مخالفم"], ["3", "نظری ندارم"], ["4", "موافقم"],
+  ["5", "کاملاً موافقم"]
 ]);
 const reverseSdoItems = vm.runInContext("Array.from(SDO_SCORING.reverseScoredItems)", context);
-assert.deepEqual(Array.from(reverseSdoItems), [5, 6, 7, 8, 13, 14, 15, 16]);
-const rawSdo = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`sdo_${String(index + 1).padStart(2, "0")}`, index < 8 ? 7 : 1]));
+assert.deepEqual(Array.from(reverseSdoItems), [9, 10, 11, 12, 13, 14, 15, 16]);
+const rawSdo = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`sdo_${String(index + 1).padStart(2, "0")}`, index < 8 ? 5 : 1]));
 context.rawSdo = rawSdo;
-assert.equal(vm.runInContext("SDO_SCORING.calculate(rawSdo)", context), 4, "SDO score must mean all 16 keyed responses");
-context.allHighSdo = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`sdo_${String(index + 1).padStart(2, "0")}`, 7]));
-assert.equal(vm.runInContext("SDO_SCORING.calculate(allHighSdo)", context), 4, "reverse-keyed items must use 8 - raw response");
+assert.equal(vm.runInContext("SDO_SCORING.calculate(rawSdo)", context), 5, "SDO score must mean all 16 keyed responses");
+context.allHighSdo = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`sdo_${String(index + 1).padStart(2, "0")}`, 5]));
+assert.equal(vm.runInContext("SDO_SCORING.calculate(allHighSdo)", context), 3, "reverse-keyed items must use 6 - raw response");
+context.outOfRangeSdo = { ...rawSdo, sdo_16: 6 };
+assert.throws(() => vm.runInContext("SDO_SCORING.calculate(outOfRangeSdo)", context), /Missing or invalid SDO response: sdo_16/);
 assert.throws(() => vm.runInContext("SDO_SCORING.calculate({})", context), /Missing or invalid SDO response: sdo_01/);
 state.sdoResponses = rawSdo;
 state.sdoScore = vm.runInContext("SDO_SCORING.calculate(rawSdo)", context);
 const questionnairePayload = participantInsertPayload(resultRow);
 assert.deepEqual(questionnairePayload.sdo_responses, rawSdo, "all 16 raw SDO responses must be retained in the payload");
-assert.equal(questionnairePayload.sdo_score, 4, "the calculated SDO score must be retained in the payload");
+assert.equal(questionnairePayload.sdo_score, 5, "the calculated SDO score must be retained in the payload");
 assert.doesNotMatch(html, /id=["'](?:sdo-score|sdo-results)["']/i, "SDO results must not have participant-facing output elements");
 assert.match(html, /<html lang="fa" dir="rtl">/);
 assert.match(source, /state\.sdoScore = SDO_SCORING\.calculate\(responses\)/);
@@ -356,5 +358,5 @@ console.log("Verified E/left and I/right controls plus non-cropping overview and
 console.log("Verified that no participant-facing trial-data download control or handler exists.");
 console.log("Verified that successful completion is score-free and terminal, while save failure retains retry.");
 console.log("Verified D-score direction in both groups, component averaging, gender RT outputs, and >10% fast-response exclusion.");
-console.log("Verified all 16 Persian SDO7 items, 1–7 responses, reverse scoring, final mean, validation, and Supabase payload fields.");
+console.log("Verified all 16 approved Persian SDO items, 1–5 responses, items 9–16 reverse scoring, final mean, validation, and Supabase payload fields.");
 console.log("Verified the SDO-to-MFQ flow, exact MFQ-2 content, 0–4 responses, required-answer validation, and all six domain means.");
