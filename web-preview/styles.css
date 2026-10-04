@@ -105,6 +105,16 @@ kbd { background: #fff; color: #111; border-radius: 5px; padding: 2px 7px; font-
 .save-status.failed { color: #ff7b82; }
 .retry-save-button { margin-top: 10px; padding-block: 9px; }
 
+.questionnaire-panel { width: min(100%, 820px); margin: 0 auto; }
+.questionnaire-panel h1 { font-size: clamp(1.8rem, 6vw, 3.2rem); line-height: 1.35; }
+.questionnaire-items { display: grid; gap: 18px; margin: 30px 0; }
+.questionnaire-item { margin: 0; padding: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+.questionnaire-item legend { padding: 0 0 12px; font-weight: 700; line-height: 1.7; }
+.scale-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.scale-option { flex: 1 1 92px; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; padding: 8px; border: 1px solid #66707e; border-radius: 9px; cursor: pointer; }
+.scale-option:has(input:checked) { color: #061108; background: var(--green); border-color: var(--green); }
+.questionnaire-item.missing { border-color: #ff7b82; }
+
 @media (min-width: 760px) and (hover: hover) {
   .response-controls { opacity: .45; }
 }

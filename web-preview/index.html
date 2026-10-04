@@ -47,6 +47,30 @@
         <p id="key-hint" class="key-hint">برای سمت چپ <kbd>E</kbd> یا برای سمت راست <kbd>I</kbd> را فشار دهید</p>
       </section>
 
+      <section id="post-iat-transition" class="panel questionnaire-panel" hidden>
+        <h1>بخش نخست به پایان رسید</h1>
+        <p>در ادامه، لطفاً به پرسش‌های بخش بعدی پاسخ دهید.</p>
+        <button id="start-sdo-button" class="primary-button" type="button">ادامه</button>
+      </section>
+
+      <section id="sdo-questionnaire" class="panel questionnaire-panel" hidden>
+        <h1>پرسشنامه SDO</h1>
+        <p>لطفاً به همهٔ عبارت‌ها پاسخ دهید.</p>
+        <form id="sdo-form" novalidate><div id="sdo-items" class="questionnaire-items"></div>
+          <p id="sdo-error" class="validation-message" role="alert" hidden>لطفاً به همهٔ پرسش‌ها پاسخ دهید.</p>
+          <button class="primary-button" type="submit">ادامه</button>
+        </form>
+      </section>
+
+      <section id="mfq-questionnaire" class="panel questionnaire-panel" hidden>
+        <h1>پرسشنامه مبانی اخلاقی</h1>
+        <p>لطفا هر یک از عبارت هایی را که در ادامه می آیند با دقت بخوانید و مشخص کنید که هر کدام تا چه اندازه شما یا نظرات شما را توصیف می‌کنند.</p>
+        <form id="mfq-form" novalidate><div id="mfq-items" class="questionnaire-items"></div>
+          <p id="mfq-error" class="validation-message" role="alert" hidden>لطفاً پیش از ادامه به همهٔ ۳۶ پرسش پاسخ دهید.</p>
+          <button id="submit-mfq-button" class="primary-button" type="submit">ثبت پاسخ‌ها</button>
+        </form>
+      </section>
+
       <section id="summary" class="panel summary" hidden>
         <div id="completion-message" class="completion-message" hidden>
           <h1>از مشارکت شما در این پژوهش سپاسگزاریم.</h1>
@@ -59,6 +83,8 @@
         </div>
       </section>
     </main>
+    <script src="questionnaire-data.js"></script>
+    <script src="mfq-scoring.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
