@@ -17,10 +17,18 @@ const inquisit = fs.readFileSync(new URL("../pictureiat_inc.iqjs", import.meta.u
 const definitions = source.slice(0, source.indexOf('document.addEventListener("keydown"'));
 const requests = [];
 let responseStatus = 201;
+const uiNodes = [...html.matchAll(/\bid="([^"]+)"/g)].map(([, id]) => ({ id, hidden: false, className: "", textContent: "" }));
+const mfqForm = uiNodes.find(node => node.id === "mfq-form");
+mfqForm.values = Object.fromEntries(Array.from({ length: 36 }, (_, index) => [`mfq_${String(index + 1).padStart(2, "0")}`, "2"]));
+mfqForm.querySelector = () => ({ classList: { toggle() {} }, scrollIntoView() {} });
 const context = {
-  document: { querySelectorAll: () => [] },
+  document: { querySelectorAll: () => uiNodes },
   location: { search: "?group=1" },
   crypto: webcrypto, URL, URLSearchParams, console,
+  FormData: class {
+    constructor(form) { this.values = form.values; }
+    get(name) { return this.values[name] ?? null; }
+  },
   fetch: async (...args) => {
     requests.push(args);
     return { ok: responseStatus >= 200 && responseStatus < 300, status: responseStatus };
@@ -28,9 +36,9 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(`${sdoData}\n${sdoScoring}\n${questionnaireData}\n${mfqScoring}`, context);
-vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
+vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el };`, context);
 
-const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
+const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el } = context.preview;
 const phrase = {
   attributeA: "یک کلمه خوب",
   attributeB: "یک کلمه بد",
@@ -128,7 +136,14 @@ assert.equal(isEligibleAge(20.5), false);
 assert.match(css, /font-family:\s*Vazirmatn, Tahoma, Arial, sans-serif/);
 assert.match(css, /fonts\.googleapis\.com\/css2\?family=Vazirmatn/);
 assert.match(css, /\.face-row img[^}]*object-fit: contain/);
-assert.match(css, /\.stimulus img[^}]*object-fit: contain/);
+assert.match(source, /el\.stimulus\.innerHTML = `<img src="\$\{trial\.value\}" alt="محرک چهره">`/, "face trials must render through the shared stimulus image element");
+assert.match(css, /\.stimulus img \{[^}]*width: min\(70vw, 250px\);[^}]*height: min\(48vh, 320px\);[^}]*object-fit: contain;[^}]*object-position: center;/, "every rendered face must use the same centered, aspect-ratio-preserving viewport");
+const elementReferences = new Set([
+  ...source.matchAll(/el\["([^"]+)"\]/g),
+  ...source.matchAll(/\bel\.([A-Za-z_$][\w$-]*)/g)
+].map(match => match[1]));
+const htmlIds = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]));
+assert.deepEqual([...elementReferences].filter(id => !htmlIds.has(id)), [], "every element-map reference must resolve to an element ID in the real HTML");
 assert.match(SESSION_PARTICIPANT_ID, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 assert.notEqual(generateParticipantId(), generateParticipantId(), "generated participant IDs should be unique");
 assert.equal(state.participant.Participant_ID, SESSION_PARTICIPANT_ID);
@@ -142,8 +157,24 @@ assert.match(source, /Authorization: `Bearer \$\{SUPABASE_PUBLISHABLE_KEY\}`/);
 assert.match(source, /body: JSON\.stringify\(participantInsertPayload\(scores\)\)/, "the completed participant score row must be mapped to the database schema");
 assert.match(html, /id="save-status"[^>]*class="save-status"/);
 assert.match(html, /id="retry-save-button"/);
-assert.match(html, /از مشارکت شما در این پژوهش سپاسگزاریم./, "successful completion must thank the participant");
-assert.match(html, /پاسخ‌های شما با موفقیت ثبت شد./, "successful completion must confirm that responses were saved");
+const completionCopy = [
+  "با سپاس از مشارکت شما",
+  "پاسخ‌های شما با موفقیت ثبت شد.",
+  "از زمانی که برای شرکت در این پژوهش اختصاص دادید، صمیمانه سپاسگزاریم.",
+  "مشارکت شما در انجام این پژوهش برای ما بسیار ارزشمند است.",
+  "با تشکر",
+  "آزمون به پایان رسیده است. اکنون می‌توانید این صفحه را ببندید."
+];
+const completionMarkup = html.slice(html.indexOf('id="completion-message"'), html.indexOf('id="save-result"'));
+let previousCompletionLine = -1;
+for (const line of completionCopy) {
+  const lineIndex = completionMarkup.indexOf(line);
+  assert.ok(lineIndex > previousCompletionLine, `completion copy must include in order: ${line}`);
+  previousCompletionLine = lineIndex;
+}
+assert.match(html, /<p>با تشکر<\/p>/, "the closing thanks must appear on its own line");
+assert.match(html, /class="completion-final">آزمون به پایان رسیده است/, "the final sentence must have dedicated spacing");
+assert.match(css, /\.completion-message \.completion-final[^}]*margin-top: 44px;/, "the final sentence must be visually separated");
 assert.doesNotMatch(html, /id=["'](?:d-score|interpretation|quality-metrics)["']/, "completion UI must not contain score or quality output elements");
 assert.doesNotMatch(html, /نمرهٔ D|دقت پاسخ اولیه|کمتر از ۳۰۰|نشانگر حذف|گروه موازنه‌سازی|Gender RT Difference|Same-Gender Advantage/, "completion UI must not disclose participant metrics");
 assert.doesNotMatch(html, /id=["']restart-button["']|اجرای دوباره/, "successful completion must not offer a restart control");
@@ -205,6 +236,21 @@ await assert.rejects(
   /Supabase request failed with status 200/,
   "only PostgREST's successful INSERT statuses should be accepted"
 );
+
+responseStatus = 201;
+state.scores = resultRow;
+el["mfq-questionnaire"].hidden = false;
+el.summary.hidden = true;
+el["completion-message"].hidden = true;
+el["save-result"].hidden = false;
+const completionRequestCount = requests.length;
+submitMfq({ preventDefault() {}, currentTarget: mfqForm });
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(el["mfq-questionnaire"].hidden, true, "valid MFQ submission must hide the questionnaire");
+assert.equal(el.summary.hidden, false, "valid MFQ submission must reveal the completion region");
+assert.equal(requests.length, completionRequestCount + 1, "MFQ completion flow must submit the participant payload");
+assert.equal(el["save-result"].hidden, true, "successful submission must hide the save status");
+assert.equal(el["completion-message"].hidden, false, "successful submission must reveal the thank-you screen");
 
 function simulatedTrials(group, compatibleRt, incompatibleRt) {
   const parts = group === 1
@@ -349,7 +395,8 @@ assert.throws(() => vm.runInContext("MFQ_SCORING.calculate({})", context), /Miss
 assert.match(html, /لطفا هر یک از عبارت هایی را که در ادامه می آیند با دقت بخوانید و مشخص کنید که هر کدام تا چه اندازه شما یا نظرات شما را توصیف می‌کنند./);
 assert.match(html, /id="post-iat-transition"[\s\S]*id="sdo-questionnaire"[\s\S]*id="mfq-questionnaire"[\s\S]*id="summary"/, "study sections must remain in the required order");
 assert.match(source, /state\.sdoResponses = responses;[\s\S]*el\["mfq-questionnaire"\]\.hidden = false;/, "SDO completion must reveal MFQ");
-assert.match(source, /if \(!responses\) return;[\s\S]*state\.mfqResponses = responses;[\s\S]*el\.summary\.hidden = false;/, "complete MFQ must reveal final page");
+assert.match(source, /if \(!responses\) return;[\s\S]*state\.mfqResponses = responses;[\s\S]*el\.summary\.hidden = false;[\s\S]*submitResults\(\);/, "complete MFQ must start final submission");
+assert.match(source, /el\["completion-message"\]\.hidden = true;[\s\S]*await saveParticipantResults\(state\.scores\);[\s\S]*el\["completion-message"\]\.hidden = false;/, "the thank-you page must stay hidden until submission succeeds");
 assert.match(source, /errorElement\.hidden = !firstMissing/, "missing questionnaire responses must show validation");
 
 console.log("Verified dynamic instructions and response mappings for all 7 blocks in groups 1 and 2.");
