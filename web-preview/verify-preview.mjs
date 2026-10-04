@@ -11,6 +11,8 @@ const html = fs.readFileSync(htmlPath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
 const questionnaireData = fs.readFileSync(new URL("questionnaire-data.js", import.meta.url), "utf8");
 const mfqScoring = fs.readFileSync(new URL("mfq-scoring.js", import.meta.url), "utf8");
+const sdoData = fs.readFileSync(new URL("sdo-data.js", import.meta.url), "utf8");
+const sdoScoring = fs.readFileSync(new URL("sdo-scoring.js", import.meta.url), "utf8");
 const inquisit = fs.readFileSync(new URL("../pictureiat_inc.iqjs", import.meta.url), "utf8");
 const definitions = source.slice(0, source.indexOf('document.addEventListener("keydown"'));
 const requests = [];
@@ -25,7 +27,7 @@ const context = {
   }
 };
 vm.createContext(context);
-vm.runInContext(`${questionnaireData}\n${mfqScoring}`, context);
+vm.runInContext(`${sdoData}\n${sdoScoring}\n${questionnaireData}\n${mfqScoring}`, context);
 vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
 
 const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
@@ -236,6 +238,49 @@ const fast = simulatedTrials(1, 500, 800);
 fast.slice(0, 13).forEach(trial => { trial.latency = 250; });
 assert.equal(calculateScores(fast).excludeCriteriaMet, true, "more than 10% sub-300 ms trials must flag exclusion");
 
+const sdo = vm.runInContext("SDO_QUESTIONNAIRE", context);
+const expectedSdoTexts = [
+  "بعضی از گروه‌های مردم باید سر جای خودشان نگه داشته شوند.",
+  "احتمالاً این خوب است که بعضی گروه‌ها در بالا و گروه‌های دیگر در پایین باشند.",
+  "یک جامعهٔ ایده‌آل مستلزم آن است که بعضی گروه‌ها در بالا و گروه‌های دیگر در پایین باشند.",
+  "بعضی از گروه‌های مردم صرفاً از گروه‌های دیگر پست‌ترند.",
+  "گروه‌هایی که در پایین قرار دارند، به همان اندازهٔ گروه‌های بالا شایسته‌اند.",
+  "هیچ گروهی نباید بر جامعه مسلط باشد.",
+  "گروه‌هایی که در پایین قرار دارند، نباید مجبور باشند سر جای خود بمانند.",
+  "سلطهٔ گروهی اصل نادرستی است.",
+  "نباید برای برابری گروه‌ها تلاش کنیم.",
+  "نباید تلاش کنیم تضمین شود که هر گروه از کیفیت زندگی یکسانی برخوردار است.",
+  "تلاش برای برابر کردن گروه‌ها ناعادلانه است.",
+  "برابری گروه‌ها نباید هدف اصلی ما باشد.",
+  "باید تلاش کنیم به همهٔ گروه‌ها فرصت برابری برای موفقیت بدهیم.",
+  "باید هر کاری از دستمان برمی‌آید انجام دهیم تا شرایط گروه‌های مختلف را برابر کنیم.",
+  "صرف‌نظر از اینکه چقدر تلاش لازم است، باید بکوشیم مطمئن شویم همهٔ گروه‌ها در زندگی فرصت یکسانی دارند.",
+  "برابری گروه‌ها باید آرمان ما باشد."
+];
+assert.equal(sdo.items.length, 16, "SDO must contain exactly 16 items");
+assert.deepEqual(Array.from(sdo.items, item => item.id), Array.from({ length: 16 }, (_, index) => `sdo_${String(index + 1).padStart(2, "0")}`));
+assert.deepEqual(Array.from(sdo.items, item => item.text), expectedSdoTexts, "all Persian SDO7 texts must remain exact and ordered");
+assert.deepEqual(Array.from(sdo.responseOptions, option => [option.value, option.label]), [
+  ["1", "کاملاً مخالفم"], ["2", "مخالفم"], ["3", "تا حدی مخالفم"], ["4", "نه موافقم و نه مخالف"],
+  ["5", "تا حدی موافقم"], ["6", "موافقم"], ["7", "کاملاً موافقم"]
+]);
+const reverseSdoItems = vm.runInContext("Array.from(SDO_SCORING.reverseScoredItems)", context);
+assert.deepEqual(Array.from(reverseSdoItems), [5, 6, 7, 8, 13, 14, 15, 16]);
+const rawSdo = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`sdo_${String(index + 1).padStart(2, "0")}`, index < 8 ? 7 : 1]));
+context.rawSdo = rawSdo;
+assert.equal(vm.runInContext("SDO_SCORING.calculate(rawSdo)", context), 4, "SDO score must mean all 16 keyed responses");
+context.allHighSdo = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`sdo_${String(index + 1).padStart(2, "0")}`, 7]));
+assert.equal(vm.runInContext("SDO_SCORING.calculate(allHighSdo)", context), 4, "reverse-keyed items must use 8 - raw response");
+assert.throws(() => vm.runInContext("SDO_SCORING.calculate({})", context), /Missing or invalid SDO response: sdo_01/);
+state.sdoResponses = rawSdo;
+state.sdoScore = vm.runInContext("SDO_SCORING.calculate(rawSdo)", context);
+const questionnairePayload = participantInsertPayload(resultRow);
+assert.deepEqual(questionnairePayload.sdo_responses, rawSdo, "all 16 raw SDO responses must be retained in the payload");
+assert.equal(questionnairePayload.sdo_score, 4, "the calculated SDO score must be retained in the payload");
+assert.doesNotMatch(html, /id=["'](?:sdo-score|sdo-results)["']/i, "SDO results must not have participant-facing output elements");
+assert.match(html, /<html lang="fa" dir="rtl">/);
+assert.match(source, /state\.sdoScore = SDO_SCORING\.calculate\(responses\)/);
+
 const mfq = vm.runInContext("MFQ_QUESTIONNAIRE", context);
 const expectedMfqTexts = [
   "مراقبت از افراد رنج دیده یک فضیلت اخلاقی مهم است.", "اگر همه درآمد یکسانی داشتند دنیا جای بهتری می شد.", "فکر می کنم افرادی که سخت کوش تر هستند باید پول بیشتری عایدشان شود.",
@@ -284,4 +329,5 @@ console.log("Verified E/left and I/right controls plus non-cropping overview and
 console.log("Verified that no participant-facing trial-data download control or handler exists.");
 console.log("Verified that successful completion is score-free and terminal, while save failure retains retry.");
 console.log("Verified D-score direction in both groups, component averaging, gender RT outputs, and >10% fast-response exclusion.");
+console.log("Verified all 16 Persian SDO7 items, 1–7 responses, reverse scoring, final mean, validation, and Supabase payload fields.");
 console.log("Verified the SDO-to-MFQ flow, exact MFQ-2 content, 0–4 responses, required-answer validation, and all six domain means.");
