@@ -158,6 +158,9 @@ const resultRow = {
   Participant_ID: SESSION_PARTICIPANT_ID, Group: 1, Age: 25, Gender: "زن",
   Education_Level: "کارشناسی ارشد", Employment_Status: "دانشجو",
   Monthly_Income: "زیر ۲۵ میلیون تومان", Religiosity: "متوسط",
+  block_1_mean_rt: 501, block_2_mean_rt: 502, block_3_mean_rt: 503,
+  block_4_mean_rt: 504, block_5_mean_rt: 505, block_6_mean_rt: 506,
+  block_7_mean_rt: 507,
   D_score: 0.42, D_short: 0.31, D_long: 0.53,
   percentCorrect: 95, propRT300: 0.02, excludeCriteriaMet: false,
   Mean_RT_Iranian_Female: 510, Mean_RT_Iranian_Male: 520,
@@ -166,7 +169,9 @@ const resultRow = {
   Gender_RT_Difference: 10, Same_Gender_Advantage: 10
 };
 const expectedSupabaseColumns = [
-  "participant_id", "group_number", "age", "gender", "education_level", "employment_status", "monthly_income", "religiosity", "d_score", "d_short", "d_long",
+  "participant_id", "group_number", "age", "gender", "education_level", "employment_status", "monthly_income", "religiosity",
+  "block_1_mean_rt", "block_2_mean_rt", "block_3_mean_rt", "block_4_mean_rt", "block_5_mean_rt", "block_6_mean_rt", "block_7_mean_rt",
+  "d_score", "d_short", "d_long",
   "percent_correct", "prop_rt_300", "exclude_criteria_met",
   "mean_rt_iranian_female", "mean_rt_iranian_male",
   "mean_rt_afghan_female", "mean_rt_afghan_male",
@@ -176,7 +181,7 @@ const expectedSupabaseColumns = [
 ];
 const mappedRow = participantInsertPayload(resultRow);
 assert.deepEqual(Object.keys(mappedRow), expectedSupabaseColumns, "insert payload keys must exactly match public.participants columns");
-assert.deepEqual(Object.values(mappedRow).slice(0, 22), Object.values(resultRow), "schema mapping must preserve every existing calculated value");
+assert.deepEqual(Object.values(mappedRow).slice(0, 29), Object.values(resultRow), "schema mapping must preserve every existing calculated value");
 assert.deepEqual(Object.keys(mappedRow.sdo_responses), []);
 assert.equal(mappedRow.sdo_score, null);
 assert.deepEqual(Object.keys(mappedRow.mfq_responses), []);
@@ -237,6 +242,28 @@ assert.equal(
 const fast = simulatedTrials(1, 500, 800);
 fast.slice(0, 13).forEach(trial => { trial.latency = 250; });
 assert.equal(calculateScores(fast).excludeCriteriaMet, true, "more than 10% sub-300 ms trials must flag exclusion");
+
+const allBlockTrials = Array.from({ length: 7 }, (_, index) => {
+  const part = index + 1;
+  return [
+    { part, latency: part * 100, initialCorrect: true },
+    { part, latency: part * 100 + 50, initialCorrect: true }
+  ];
+}).flat();
+// Supply viable combined-block cells so the unchanged D-score calculations can
+// also run; block 4's >10,000 ms trial verifies block means use raw recorded RTs.
+allBlockTrials.forEach((trial, index) => {
+  trial.condition = trial.part < 6 ? "compatible" : "incompatible";
+  trial.blockLength = [3, 6].includes(trial.part) ? "short" : "long";
+  trial.category = "attributeA";
+  trial.value = "عالی";
+  if (trial.part === 4 && index % 2) trial.latency = 12050;
+});
+const blockScores = calculateScores(allBlockTrials);
+for (const part of [1, 2, 3, 5, 6, 7]) {
+  assert.equal(blockScores[`block_${part}_mean_rt`], part * 100 + 25, `block ${part} mean must use its recorded trial RTs`);
+}
+assert.equal(blockScores.block_4_mean_rt, (400 + 12050) / 2, "block means must not inherit the D-score 10,000 ms filter");
 
 const sdo = vm.runInContext("SDO_QUESTIONNAIRE", context);
 const expectedSdoTexts = [

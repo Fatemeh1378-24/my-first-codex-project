@@ -45,6 +45,12 @@ marks its embedded instruction trial invalid for D, accuracy, and face means.
 
 ## Additional outputs
 
+`block_1_mean_rt` through `block_7_mean_rt` are participant-level arithmetic
+means of all recorded final-response latencies in their respective IAT blocks.
+These summaries use the same trial-level `latency` values retained internally,
+including latencies above the D-score's 10,000 ms inclusion threshold; they do
+not alter or replace the D-score input filtering.
+
 Face means use retained face trials from the same four combined blocks. Filename
 suffixes `_F#` and `_M#` identify depicted gender. `Gender_RT_Difference` is male-face
 mean minus female-face mean. `Same_Gender_Advantage` is that difference for female

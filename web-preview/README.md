@@ -21,7 +21,7 @@ Desktop users can respond with **E** (left) and **I** (right). Touch devices dis
 
 The static app authenticates requests with the configured Supabase publishable key. Supabase Row Level Security must allow anonymous `INSERT` access to `public.participants`; no secret or service-role key belongs in this browser application.
 
-Before deploying the demographic form, run [`../supabase/participants_demographics.sql`](../supabase/participants_demographics.sql) in the Supabase SQL editor. It adds the six demographic columns and replaces the age check with the inclusive 20–30 range without changing RLS. The file includes commented, optional cleanup statements for the obsolete nationality and ethnicity columns.
+Before deploying the demographic form, run [`../supabase/participants_demographics.sql`](../supabase/participants_demographics.sql) in the Supabase SQL editor. It adds the six demographic columns and replaces the age check with the inclusive 20–30 range without changing RLS. The file includes commented, optional cleanup statements for the obsolete nationality and ethnicity columns. Also run [`../supabase/add_iat_block_mean_rt_columns.sql`](../supabase/add_iat_block_mean_rt_columns.sql) manually to add the seven participant-level IAT block mean RT columns used by the submission payload.
 
 ## GitHub Pages
 

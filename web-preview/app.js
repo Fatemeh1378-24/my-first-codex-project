@@ -324,6 +324,12 @@ function sampleSd(values) {
 function calculateScores(trials = state.trials, participantGender = state.participant?.Gender_Normalized ?? "prefer_not_to_say") {
   // Millisecond's correction-required variant records latency to the final,
   // correct response. Accordingly, t.latency (not firstLatency) is scored.
+  // Block means intentionally include every recorded trial in that block. The
+  // D-score's latency eligibility rules below remain limited to its test blocks.
+  const blockMeanRts = Object.fromEntries(Array.from({ length: 7 }, (_, index) => {
+    const part = index + 1;
+    return [`block_${part}_mean_rt`, mean(trials.filter(t => t.part === part).map(t => t.latency))];
+  }));
   const testTrials = trials.filter(t => [3, 4, 6, 7].includes(t.part));
   const eligible = testTrials.filter(t => t.latency <= 10000);
   const cells = {};
@@ -348,6 +354,7 @@ function calculateScores(trials = state.trials, participantGender = state.partic
   const Same_Gender_Advantage = participantGender === "female" ? Gender_RT_Difference
     : participantGender === "male" ? -Gender_RT_Difference : null;
   return {
+    ...blockMeanRts,
     D_score: (D_short + D_long) / 2, D_short, D_long,
     percentCorrect: mean(eligible.map(t => t.initialCorrect ? 1 : 0)) * 100,
     propRT300: mean(testTrials.map(t => t.latency < 300 ? 1 : 0)),
@@ -369,6 +376,13 @@ function participantInsertPayload(scores) {
     employment_status: scores.Employment_Status,
     monthly_income: scores.Monthly_Income,
     religiosity: scores.Religiosity,
+    block_1_mean_rt: scores.block_1_mean_rt,
+    block_2_mean_rt: scores.block_2_mean_rt,
+    block_3_mean_rt: scores.block_3_mean_rt,
+    block_4_mean_rt: scores.block_4_mean_rt,
+    block_5_mean_rt: scores.block_5_mean_rt,
+    block_6_mean_rt: scores.block_6_mean_rt,
+    block_7_mean_rt: scores.block_7_mean_rt,
     d_score: scores.D_score,
     d_short: scores.D_short,
     d_long: scores.D_long,
