@@ -98,7 +98,7 @@ kbd { background: #fff; color: #111; border-radius: 5px; padding: 2px 7px; font-
 .completion-message { padding-top: clamp(48px, 15vh, 150px); text-align: center; }
 .completion-message h1 { font-size: clamp(1.8rem, 5vw, 3.4rem); line-height: 1.4; }
 .completion-message p { color: #d7dae0; font-size: 1.05rem; }
-.completion-message p:last-child { color: var(--muted); font-size: .9rem; margin-top: 28px; }
+.completion-message .completion-final { color: var(--muted); font-size: .9rem; margin-top: 44px; }
 .save-result { min-height: 52px; margin: 0 0 20px; }
 .save-status { display: block; color: var(--muted); }
 .save-status.saved { color: var(--green); }

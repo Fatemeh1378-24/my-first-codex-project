@@ -142,8 +142,24 @@ assert.match(source, /Authorization: `Bearer \$\{SUPABASE_PUBLISHABLE_KEY\}`/);
 assert.match(source, /body: JSON\.stringify\(participantInsertPayload\(scores\)\)/, "the completed participant score row must be mapped to the database schema");
 assert.match(html, /id="save-status"[^>]*class="save-status"/);
 assert.match(html, /id="retry-save-button"/);
-assert.match(html, /از مشارکت شما در این پژوهش سپاسگزاریم./, "successful completion must thank the participant");
-assert.match(html, /پاسخ‌های شما با موفقیت ثبت شد./, "successful completion must confirm that responses were saved");
+const completionCopy = [
+  "با سپاس از مشارکت شما",
+  "پاسخ‌های شما با موفقیت ثبت شد.",
+  "از زمانی که برای شرکت در این پژوهش اختصاص دادید، صمیمانه سپاسگزاریم.",
+  "مشارکت شما در انجام این پژوهش برای ما بسیار ارزشمند است.",
+  "با تشکر",
+  "آزمون به پایان رسیده است. اکنون می‌توانید این صفحه را ببندید."
+];
+const completionMarkup = html.slice(html.indexOf('id="completion-message"'), html.indexOf('id="save-result"'));
+let previousCompletionLine = -1;
+for (const line of completionCopy) {
+  const lineIndex = completionMarkup.indexOf(line);
+  assert.ok(lineIndex > previousCompletionLine, `completion copy must include in order: ${line}`);
+  previousCompletionLine = lineIndex;
+}
+assert.match(html, /<p>با تشکر<\/p>/, "the closing thanks must appear on its own line");
+assert.match(html, /class="completion-final">آزمون به پایان رسیده است/, "the final sentence must have dedicated spacing");
+assert.match(css, /\.completion-message \.completion-final[^}]*margin-top: 44px;/, "the final sentence must be visually separated");
 assert.doesNotMatch(html, /id=["'](?:d-score|interpretation|quality-metrics)["']/, "completion UI must not contain score or quality output elements");
 assert.doesNotMatch(html, /نمرهٔ D|دقت پاسخ اولیه|کمتر از ۳۰۰|نشانگر حذف|گروه موازنه‌سازی|Gender RT Difference|Same-Gender Advantage/, "completion UI must not disclose participant metrics");
 assert.doesNotMatch(html, /id=["']restart-button["']|اجرای دوباره/, "successful completion must not offer a restart control");
@@ -349,7 +365,8 @@ assert.throws(() => vm.runInContext("MFQ_SCORING.calculate({})", context), /Miss
 assert.match(html, /لطفا هر یک از عبارت هایی را که در ادامه می آیند با دقت بخوانید و مشخص کنید که هر کدام تا چه اندازه شما یا نظرات شما را توصیف می‌کنند./);
 assert.match(html, /id="post-iat-transition"[\s\S]*id="sdo-questionnaire"[\s\S]*id="mfq-questionnaire"[\s\S]*id="summary"/, "study sections must remain in the required order");
 assert.match(source, /state\.sdoResponses = responses;[\s\S]*el\["mfq-questionnaire"\]\.hidden = false;/, "SDO completion must reveal MFQ");
-assert.match(source, /if \(!responses\) return;[\s\S]*state\.mfqResponses = responses;[\s\S]*el\.summary\.hidden = false;/, "complete MFQ must reveal final page");
+assert.match(source, /if \(!responses\) return;[\s\S]*state\.mfqResponses = responses;[\s\S]*el\.summary\.hidden = false;[\s\S]*submitResults\(\);/, "complete MFQ must start final submission");
+assert.match(source, /el\["completion-message"\]\.hidden = true;[\s\S]*await saveParticipantResults\(state\.scores\);[\s\S]*el\["completion-message"\]\.hidden = false;/, "the thank-you page must stay hidden until submission succeeds");
 assert.match(source, /errorElement\.hidden = !firstMissing/, "missing questionnaire responses must show validation");
 
 console.log("Verified dynamic instructions and response mappings for all 7 blocks in groups 1 and 2.");
