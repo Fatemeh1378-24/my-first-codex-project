@@ -17,10 +17,18 @@ const inquisit = fs.readFileSync(new URL("../pictureiat_inc.iqjs", import.meta.u
 const definitions = source.slice(0, source.indexOf('document.addEventListener("keydown"'));
 const requests = [];
 let responseStatus = 201;
+const uiNodes = [...html.matchAll(/\bid="([^"]+)"/g)].map(([, id]) => ({ id, hidden: false, className: "", textContent: "" }));
+const mfqForm = uiNodes.find(node => node.id === "mfq-form");
+mfqForm.values = Object.fromEntries(Array.from({ length: 36 }, (_, index) => [`mfq_${String(index + 1).padStart(2, "0")}`, "2"]));
+mfqForm.querySelector = () => ({ classList: { toggle() {} }, scrollIntoView() {} });
 const context = {
-  document: { querySelectorAll: () => [] },
+  document: { querySelectorAll: () => uiNodes },
   location: { search: "?group=1" },
   crypto: webcrypto, URL, URLSearchParams, console,
+  FormData: class {
+    constructor(form) { this.values = form.values; }
+    get(name) { return this.values[name] ?? null; }
+  },
   fetch: async (...args) => {
     requests.push(args);
     return { ok: responseStatus >= 200 && responseStatus < 300, status: responseStatus };
@@ -28,9 +36,9 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(`${sdoData}\n${sdoScoring}\n${questionnaireData}\n${mfqScoring}`, context);
-vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES };`, context);
+vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el };`, context);
 
-const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES } = context.preview;
+const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el } = context.preview;
 const phrase = {
   attributeA: "یک کلمه خوب",
   attributeB: "یک کلمه بد",
@@ -128,7 +136,14 @@ assert.equal(isEligibleAge(20.5), false);
 assert.match(css, /font-family:\s*Vazirmatn, Tahoma, Arial, sans-serif/);
 assert.match(css, /fonts\.googleapis\.com\/css2\?family=Vazirmatn/);
 assert.match(css, /\.face-row img[^}]*object-fit: contain/);
-assert.match(css, /\.stimulus img[^}]*object-fit: contain/);
+assert.match(source, /el\.stimulus\.innerHTML = `<img src="\$\{trial\.value\}" alt="محرک چهره">`/, "face trials must render through the shared stimulus image element");
+assert.match(css, /\.stimulus img \{[^}]*width: min\(70vw, 250px\);[^}]*height: min\(48vh, 320px\);[^}]*object-fit: contain;[^}]*object-position: center;/, "every rendered face must use the same centered, aspect-ratio-preserving viewport");
+const elementReferences = new Set([
+  ...source.matchAll(/el\["([^"]+)"\]/g),
+  ...source.matchAll(/\bel\.([A-Za-z_$][\w$-]*)/g)
+].map(match => match[1]));
+const htmlIds = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]));
+assert.deepEqual([...elementReferences].filter(id => !htmlIds.has(id)), [], "every element-map reference must resolve to an element ID in the real HTML");
 assert.match(SESSION_PARTICIPANT_ID, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
 assert.notEqual(generateParticipantId(), generateParticipantId(), "generated participant IDs should be unique");
 assert.equal(state.participant.Participant_ID, SESSION_PARTICIPANT_ID);
@@ -221,6 +236,21 @@ await assert.rejects(
   /Supabase request failed with status 200/,
   "only PostgREST's successful INSERT statuses should be accepted"
 );
+
+responseStatus = 201;
+state.scores = resultRow;
+el["mfq-questionnaire"].hidden = false;
+el.summary.hidden = true;
+el["completion-message"].hidden = true;
+el["save-result"].hidden = false;
+const completionRequestCount = requests.length;
+submitMfq({ preventDefault() {}, currentTarget: mfqForm });
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(el["mfq-questionnaire"].hidden, true, "valid MFQ submission must hide the questionnaire");
+assert.equal(el.summary.hidden, false, "valid MFQ submission must reveal the completion region");
+assert.equal(requests.length, completionRequestCount + 1, "MFQ completion flow must submit the participant payload");
+assert.equal(el["save-result"].hidden, true, "successful submission must hide the save status");
+assert.equal(el["completion-message"].hidden, false, "successful submission must reveal the thank-you screen");
 
 function simulatedTrials(group, compatibleRt, incompatibleRt) {
   const parts = group === 1

@@ -161,16 +161,6 @@ function buildSequence(group) {
   ];
 }
 
-function renderOverview() {
-  const cards = Object.entries(CONFIG.categories).map(([key, category]) => {
-    const content = key.startsWith("target")
-      ? `<div class="face-row">${category.items.map(src => `<img src="${src}" alt="تصویر چهره">`).join("")}</div>`
-      : `<p>${category.items.join(" · ")}</p>`;
-    return `<article class="overview-card"><p class="card-heading">دسته</p><h2>${category.label}</h2><p class="card-heading">موارد</p>${content}</article>`;
-  });
-  el["category-overview"].innerHTML = cards.join("");
-}
-
 function labelsFor(block) {
   const c = CONFIG.categories;
   if (block.kind === "attribute") return { left: `<span class="attribute-label">${c.attributeA.label}</span>`, right: `<span class="attribute-label">${c.attributeB.label}</span>` };
