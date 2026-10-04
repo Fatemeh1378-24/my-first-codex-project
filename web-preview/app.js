@@ -52,13 +52,8 @@ const state = {
   blocks: [], blockIndex: 0, trialIndex: 0, trials: [], awaitingCorrection: false, locked: false, startedAt: 0,
   group: SESSION_GROUP,
   participant: { Participant_ID: SESSION_PARTICIPANT_ID, Group: SESSION_GROUP },
-  sdoResponses: {}, mfqResponses: {}, mfqDomainScores: {}
+  sdoResponses: {}, sdoScore: null, mfqResponses: {}, mfqDomainScores: {}
 };
-
-// The existing study specifies 16 SDO positions. Their labels remain isolated
-// here so the questionnaire flow does not affect IAT behavior or scoring.
-const SDO_ITEMS = Array.from({ length: 16 }, (_, index) => `SDO${String(index + 1).padStart(2, "0")}`);
-const SDO_RESPONSE_OPTIONS = [1, 2, 3, 4, 5, 6, 7].map(value => ({ value: String(value), label: String(value) }));
 
 function renderQuestionnaire(container, items, options) {
   container.innerHTML = items.map((item, index) => {
@@ -443,9 +438,10 @@ function showSdo() {
 
 function submitSdo(event) {
   event.preventDefault();
-  const responses = collectRequiredResponses(event.currentTarget, SDO_ITEMS, el["sdo-error"]);
+  const responses = collectRequiredResponses(event.currentTarget, SDO_QUESTIONNAIRE.items, el["sdo-error"]);
   if (!responses) return;
   state.sdoResponses = responses;
+  state.sdoScore = SDO_SCORING.calculate(responses);
   el["sdo-questionnaire"].hidden = true;
   el["mfq-questionnaire"].hidden = false;
   scrollTo({ top: 0 });
@@ -473,7 +469,7 @@ el["right-response"].addEventListener("pointerdown", () => respond("right", "tou
 el["demographic-form"].addEventListener("submit", start);
 el.age.addEventListener("input", () => { el["age-error"].hidden = isEligibleAge(el.age.value); });
 el["retry-save-button"].addEventListener("click", submitResults);
-renderQuestionnaire(el["sdo-items"], SDO_ITEMS, SDO_RESPONSE_OPTIONS);
+renderQuestionnaire(el["sdo-items"], SDO_QUESTIONNAIRE.items, SDO_QUESTIONNAIRE.responseOptions);
 renderQuestionnaire(el["mfq-items"], MFQ_QUESTIONNAIRE.items, MFQ_QUESTIONNAIRE.responseOptions);
 el["start-sdo-button"].addEventListener("click", showSdo);
 el["sdo-form"].addEventListener("submit", submitSdo);
