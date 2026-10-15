@@ -28,8 +28,8 @@ begin
 end $$;
 
 alter table public.participants
-  add constraint participants_age_20_to_30_check
-  check (age between 20 and 30);
+  add constraint participants_age_20_to_40_check
+  check (age between 20 and 40);
 
 commit;
 
