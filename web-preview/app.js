@@ -83,7 +83,7 @@ function collectRequiredResponses(form, items, errorElement) {
 
 function isEligibleAge(value) {
   const age = Number(value);
-  return Number.isInteger(age) && age >= 20 && age <= 30;
+  return Number.isInteger(age) && age >= 20 && age <= 40;
 }
 
 function collectDemographics(form) {

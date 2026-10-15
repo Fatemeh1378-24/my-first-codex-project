@@ -15,8 +15,8 @@
           <p>با تشکر<br>فاطمه بابازاده<br>دانشجوی کارشناسی ارشد روان‌شناسی شناختی<br>پژوهشکده غیرانتفاعی علوم شناختی</p>
         </div>
         <form id="demographic-form" novalidate>
-          <label class="field"><span>سن خود را وارد کنید</span><input id="age" name="age" type="number" min="20" max="30" step="1" inputmode="numeric" required></label>
-          <p id="age-error" class="validation-message" role="alert" hidden>با سپاس از تمایل شما برای شرکت در این پژوهش، شرایط سنی لازم برای شرکت در این مطالعه ۲۰ تا ۳۰ سال است.</p>
+          <label class="field"><span>سن خود را وارد کنید</span><input id="age" name="age" type="number" min="20" max="40" step="1" inputmode="numeric" required></label>
+          <p id="age-error" class="validation-message" role="alert" hidden>با سپاس از تمایل شما برای شرکت در این پژوهش، شرایط سنی لازم برای شرکت در این مطالعه ۲۰ تا ۴۰ سال است.</p>
           <label class="field"><span>جنسیت خود را انتخاب کنید</span><select id="gender" name="gender" required><option value="" selected disabled></option><option value="female">زن</option><option value="male">مرد</option><option value="prefer_not_to_say">ترجیح می‌دهم نگویم</option></select></label>
           <label class="field"><span>میزان تحصیلات خود را انتخاب کنید</span><select id="education-level" name="education_level" required><option value="" selected disabled></option><option>دیپلم</option><option>کارشناسی</option><option>کارشناسی ارشد</option><option>دکترا</option></select></label>
           <label class="field"><span>وضعیت شغلی خود را انتخاب کنید</span><select id="employment-status" name="employment_status" required><option value="" selected disabled></option><option>شاغل</option><option>بیکار</option><option>بازنشسته</option><option>دانشجو</option></select></label>
@@ -48,13 +48,13 @@
       </section>
 
       <section id="post-iat-transition" class="panel questionnaire-panel" hidden>
-        <h1>بخش نخست به پایان رسید</h1>
-        <p>در ادامه، لطفاً به پرسش‌های بخش بعدی پاسخ دهید.</p>
+        <h1>از مشارکت شما سپاسگزاریم</h1>
+        <p>در ادامه، لطفاً به دو پرسشنامه پاسخ دهید.</p>
         <button id="start-sdo-button" class="primary-button" type="button">ادامه</button>
       </section>
 
       <section id="sdo-questionnaire" class="panel questionnaire-panel" hidden>
-        <h1>پرسشنامهٔ جهت‌گیری سلطهٔ اجتماعی</h1>
+        <h1>پرسشنامهٔ اول</h1>
         <p>لطفاً میزان موافقت یا مخالفت خود را با هر یک از عبارت‌های زیر مشخص کنید.</p>
         <form id="sdo-form" novalidate><div id="sdo-items" class="questionnaire-items"></div>
           <p id="sdo-error" class="validation-message" role="alert" hidden>لطفاً به همهٔ پرسش‌ها پاسخ دهید.</p>
@@ -63,7 +63,7 @@
       </section>
 
       <section id="mfq-questionnaire" class="panel questionnaire-panel" hidden>
-        <h1>پرسشنامه مبانی اخلاقی</h1>
+        <h1>پرسشنامهٔ دوم</h1>
         <p>لطفا هر یک از عبارت هایی را که در ادامه می آیند با دقت بخوانید و مشخص کنید که هر کدام تا چه اندازه شما یا نظرات شما را توصیف می‌کنند.</p>
         <form id="mfq-form" novalidate><div id="mfq-items" class="questionnaire-items"></div>
           <p id="mfq-error" class="validation-message" role="alert" hidden>لطفاً پیش از ادامه به همهٔ ۳۶ پرسش پاسخ دهید.</p>
