@@ -12,6 +12,44 @@ const CONFIG = {
   }
 };
 
+// Keep the uploaded originals intact. Prepare every browser stimulus once at
+// the same resolution and JPEG quality before any response timing begins.
+const FACE_PRESENTATION = { width: 160, height: 200, jpegQuality: 0.9 };
+const preparedFaces = new Map();
+let preparingFaces;
+
+function prepareFaces() {
+  if (preparingFaces) return preparingFaces;
+  preparingFaces = Promise.all([
+    ...CONFIG.categories.targetA.items, ...CONFIG.categories.targetB.items
+  ].map(async filename => {
+    const original = new Image();
+    original.src = filename;
+    await original.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = FACE_PRESENTATION.width;
+    canvas.height = FACE_PRESENTATION.height;
+    const context = canvas.getContext("2d");
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    // A centered 4:5 crop fills the frame without stretching the face.
+    const scale = Math.min(original.naturalWidth / canvas.width, original.naturalHeight / canvas.height);
+    const width = canvas.width * scale;
+    const height = canvas.height * scale;
+    context.drawImage(original, (original.naturalWidth - width) / 2,
+      (original.naturalHeight - height) / 2, width, height, 0, 0, canvas.width, canvas.height);
+    const prepared = new Image(canvas.width, canvas.height);
+    prepared.alt = "محرک چهره";
+    prepared.src = canvas.toDataURL("image/jpeg", FACE_PRESENTATION.jpegQuality);
+    await prepared.decode();
+    preparedFaces.set(filename, prepared);
+  })).catch(error => {
+    preparingFaces = undefined;
+    throw error;
+  });
+  return preparingFaces;
+}
+
 const GENDER_LABELS = {
   female: "زن",
   male: "مرد",
@@ -214,8 +252,9 @@ function instructionFor(block) {
   return `${heading}${same}${mappings}${oneCategory}${block.continuation ? "" : error}${speed}${begin}`;
 }
 
-function start(event) {
+async function start(event) {
   event?.preventDefault();
+  if (el["start-button"].disabled) return;
   const form = el["demographic-form"];
   const eligibleAge = isEligibleAge(el.age.value);
   el["age-error"].hidden = eligibleAge;
@@ -223,6 +262,21 @@ function start(event) {
     if (!eligibleAge) el.age.focus();
     else form.reportValidity();
     return;
+  }
+  const button = el["start-button"];
+  const buttonText = button.textContent;
+  button.disabled = true;
+  button.textContent = "در حال آماده‌سازی تصاویر…";
+  el["image-error"].hidden = true;
+  try {
+    await prepareFaces();
+  } catch (error) {
+    console.error("Unable to prepare face stimuli.", error);
+    el["image-error"].hidden = false;
+    return;
+  } finally {
+    button.disabled = false;
+    button.textContent = buttonText;
   }
   state.participant = { ...state.participant, ...collectDemographics(form) };
   state.blocks = buildSequence(state.group);
@@ -260,7 +314,7 @@ function showTrial() {
   el["progress-fill"].style.width = `${((state.blockIndex + state.trialIndex / block.count) / state.blocks.length) * 100}%`;
   if (trial.category.startsWith("target")) {
     el.stimulus.className = "stimulus";
-    el.stimulus.innerHTML = `<img src="${trial.value}" alt="محرک چهره">`;
+    el.stimulus.replaceChildren(preparedFaces.get(trial.value));
   } else {
     el.stimulus.className = "stimulus word";
     el.stimulus.textContent = trial.value;

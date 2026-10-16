@@ -36,6 +36,29 @@ Deployment and GitHub setup instructions are in the [repository README](../READM
 
 Edit the `CONFIG` object at the top of `app.js` to change category labels, word lists, image paths, and timing. Participant-facing copy is kept in `index.html` and the instruction-building functions in `app.js`; layout and future RTL styles belong in `styles.css`.
 
+## Uploaded face stimuli
+
+The twelve `Iranian_F1`–`Iranian_M3` and `Afghan_F1`–`Afghan_M3` JPG files
+are the participant-provided originals, copied identically into the repository
+root and this preview directory. Numbering follows the order supplied in chat,
+which differs from some of the names inside the uploaded ZIP.
+
+Before starting any timed trials, the browser center-crops each face to 4:5,
+resamples it to 160 × 200 pixels with high-quality smoothing, and decodes a JPEG
+using the same quality setting (0.90). It retains these prepared images in memory
+for reuse throughout the task. The display is capped at 160 × 200 CSS pixels and
+shrinks proportionally on small screens. Source files remain unchanged; this
+preparation applies to the web preview, not the native Inquisit runtime. Common
+dimensions and compression do not guarantee identical perceptual sharpness or
+restore detail absent from an uploaded original. No facial features, skin tones,
+or expressions are synthesized or retouched.
+
+The existing block counts (20/20/20/40/20/20/40), two counterbalanced orders,
+attribute-first alternation in combined blocks, and category-specific shuffled
+item pools are retained. These follow the structure declared in the bundled
+`pictureiat_inc.iqjs`; no fixed ordering by gender is added. This is not a
+claim of identical random sequences or timing between JavaScript and Inquisit.
+
 ## Preview limitation
 
 This is a practical browser reproduction for review and customization. Browser timing and the scoring implementation should be independently validated before collecting research data.
