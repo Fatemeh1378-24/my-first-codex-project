@@ -15,6 +15,79 @@ const CONFIG = {
 // Keep the uploaded originals intact. Prepare every browser stimulus once at
 // the same resolution and JPEG quality before any response timing begins.
 const FACE_PRESENTATION = { width: 160, height: 200, jpegQuality: 0.9 };
+// Fixed adjustments calibrated on the twelve uploaded faces at 160 x 200.
+// Reduce edge detail without changing geometry or global brightness settings.
+const FACE_SOFTENING = {
+  "Iranian_F1.jpg": 0.3801,
+  "Iranian_F2.jpg": 0.2983,
+  "Iranian_F3.jpg": 0.5471,
+  "Iranian_M1.jpg": 0.0527,
+  "Iranian_M2.jpg": 0,
+  "Iranian_M3.jpg": 0.7961,
+  "Afghan_F1.jpg": 0.3127,
+  "Afghan_F2.jpg": 0.2556,
+  "Afghan_F3.jpg": 0.3909,
+  "Afghan_M1.jpg": 0.3787,
+  "Afghan_M2.jpg": 0.5391,
+  "Afghan_M3.jpg": 0.4619
+};
+
+function cropFace(original) {
+  const canvas = document.createElement("canvas");
+  canvas.width = FACE_PRESENTATION.width;
+  canvas.height = FACE_PRESENTATION.height;
+  const context = canvas.getContext("2d");
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  const scale = Math.min(original.naturalWidth / canvas.width, original.naturalHeight / canvas.height);
+  const width = canvas.width * scale;
+  const height = canvas.height * scale;
+  context.drawImage(original, (original.naturalWidth - width) / 2,
+    (original.naturalHeight - height) / 2, width, height, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+function softenFace(canvas, strength) {
+  if (!strength) return;
+  const { width, height } = canvas;
+  const context = canvas.getContext("2d");
+  const image = context.getImageData(0, 0, width, height);
+  const source = image.data;
+  const horizontal = new Float32Array(source.length);
+  // A fixed separable Gaussian (sigma 0.6 pixels), blended with the original.
+  // Pixel convolution also works in browsers without CanvasRenderingContext2D.filter.
+  const weights = [-2, -1, 0, 1, 2].map(offset => Math.exp(-offset * offset / (2 * 0.6 ** 2)));
+  const sum = weights.reduce((total, value) => total + value, 0);
+  const kernel = weights.map(value => value / sum);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      for (let channel = 0; channel < 3; channel++) {
+        let value = 0;
+        for (let k = -2; k <= 2; k++) {
+          const sampleX = Math.max(0, Math.min(width - 1, x + k));
+          value += source[(y * width + sampleX) * 4 + channel] * kernel[k + 2];
+        }
+        horizontal[(y * width + x) * 4 + channel] = value;
+      }
+    }
+  }
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      for (let channel = 0; channel < 3; channel++) {
+        let value = 0;
+        for (let k = -2; k <= 2; k++) {
+          // Extend boundary pixels instead of introducing black/transparent edges.
+          const sampleY = Math.max(0, Math.min(height - 1, y + k));
+          value += horizontal[(sampleY * width + x) * 4 + channel] * kernel[k + 2];
+        }
+        const index = (y * width + x) * 4 + channel;
+        source[index] = source[index] * (1 - strength) + value * strength;
+      }
+    }
+  }
+  context.putImageData(image, 0, 0);
+}
+
 const preparedFaces = new Map();
 let preparingFaces;
 
@@ -26,18 +99,8 @@ function prepareFaces() {
     const original = new Image();
     original.src = filename;
     await original.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = FACE_PRESENTATION.width;
-    canvas.height = FACE_PRESENTATION.height;
-    const context = canvas.getContext("2d");
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = "high";
-    // A centered 4:5 crop fills the frame without stretching the face.
-    const scale = Math.min(original.naturalWidth / canvas.width, original.naturalHeight / canvas.height);
-    const width = canvas.width * scale;
-    const height = canvas.height * scale;
-    context.drawImage(original, (original.naturalWidth - width) / 2,
-      (original.naturalHeight - height) / 2, width, height, 0, 0, canvas.width, canvas.height);
+    const canvas = cropFace(original);
+    softenFace(canvas, FACE_SOFTENING[filename] ?? 0);
     const prepared = new Image(canvas.width, canvas.height);
     prepared.alt = "محرک چهره";
     prepared.src = canvas.toDataURL("image/jpeg", FACE_PRESENTATION.jpegQuality);

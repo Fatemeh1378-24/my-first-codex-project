@@ -53,6 +53,25 @@ dimensions and compression do not guarantee identical perceptual sharpness or
 restore detail absent from an uploaded original. No facial features, skin tones,
 or expressions are synthesized or retouched.
 
+The preview also applies a small, fixed amount of Gaussian softening per image
+before JPEG encoding. The reference is `Iranian_M2.jpg`, which had the lowest
+contrast-normalized edge-detail score in the central facial region at the final
+display size. The other eleven images are softened towards this reference;
+the reference itself is not blurred. The same sigma (0.6 pixels) is used for
+each softened component, with a calibrated blend strength in `FACE_SOFTENING`.
+Convolution clamps at image boundaries to avoid dark borders and uses canvas
+pixel arithmetic rather than the browser-dependent canvas filter API.
+
+Calibration measures the square root of summed squared four-neighbor Laplacian
+responses divided by summed squared central-difference gradient responses,
+within x=25..134 and y=35..169 of the decoded 160 × 200 JPEG. In the calibration
+browser the score range decreased from 1.317–1.727 to 1.315–1.318. This is a
+contrast-normalized image-detail measure, not a validated measure of equal
+perceived sharpness. Differences in focus, noise and facial texture can remain;
+neither the score nor these settings imply identical perceptual quality.
+Calibration is specific to the current twelve originals: replacing them requires
+reviewing the blend strengths. Brightness and contrast are not normalized.
+
 The existing block counts (20/20/20/40/20/20/40), two counterbalanced orders,
 attribute-first alternation in combined blocks, and category-specific shuffled
 item pools are retained. These follow the structure declared in the bundled
