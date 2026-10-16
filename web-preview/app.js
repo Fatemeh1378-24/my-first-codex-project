@@ -16,20 +16,20 @@ const CONFIG = {
 // the same resolution and JPEG quality before any response timing begins.
 const FACE_PRESENTATION = { width: 160, height: 200, jpegQuality: 0.9 };
 // Fixed adjustments calibrated on the twelve uploaded faces at 160 x 200.
-// Reduce edge detail without changing geometry or global brightness settings.
-const FACE_SOFTENING = {
-  "Iranian_F1.jpg": 0.3801,
-  "Iranian_F2.jpg": 0.2983,
-  "Iranian_F3.jpg": 0.5471,
-  "Iranian_M1.jpg": 0.0527,
-  "Iranian_M2.jpg": 0,
-  "Iranian_M3.jpg": 0.7961,
-  "Afghan_F1.jpg": 0.3127,
-  "Afghan_F2.jpg": 0.2556,
-  "Afghan_F3.jpg": 0.3909,
-  "Afghan_M1.jpg": 0.3787,
-  "Afghan_M2.jpg": 0.5391,
-  "Afghan_M3.jpg": 0.4619
+// Increase local edge contrast without changing geometry or global brightness settings.
+const FACE_SHARPENING = {
+  "Iranian_F1.jpg": 0.6779,
+  "Iranian_F2.jpg": 0.6207,
+  "Iranian_F3.jpg": 0.3951,
+  "Iranian_M1.jpg": 1.1602,
+  "Iranian_M2.jpg": 1.1389,
+  "Iranian_M3.jpg": 0,
+  "Afghan_F1.jpg": 0.4896,
+  "Afghan_F2.jpg": 0.7039,
+  "Afghan_F3.jpg": 0.4398,
+  "Afghan_M1.jpg": 0.4724,
+  "Afghan_M2.jpg": 0.2139,
+  "Afghan_M3.jpg": 0.3907
 };
 
 function cropFace(original) {
@@ -47,16 +47,16 @@ function cropFace(original) {
   return canvas;
 }
 
-function softenFace(canvas, strength) {
+function sharpenFace(canvas, strength) {
   if (!strength) return;
   const { width, height } = canvas;
   const context = canvas.getContext("2d");
   const image = context.getImageData(0, 0, width, height);
   const source = image.data;
   const horizontal = new Float32Array(source.length);
-  // A fixed separable Gaussian (sigma 0.6 pixels), blended with the original.
+  // Unsharp masking: add a scaled high-pass residual (original minus Gaussian).
   // Pixel convolution also works in browsers without CanvasRenderingContext2D.filter.
-  const weights = [-2, -1, 0, 1, 2].map(offset => Math.exp(-offset * offset / (2 * 0.6 ** 2)));
+  const weights = [-2, -1, 0, 1, 2].map(offset => Math.exp(-offset * offset / (2 * 0.8 ** 2)));
   const sum = weights.reduce((total, value) => total + value, 0);
   const kernel = weights.map(value => value / sum);
   for (let y = 0; y < height; y++) {
@@ -81,7 +81,7 @@ function softenFace(canvas, strength) {
           value += horizontal[(sampleY * width + x) * 4 + channel] * kernel[k + 2];
         }
         const index = (y * width + x) * 4 + channel;
-        source[index] = source[index] * (1 - strength) + value * strength;
+        source[index] = source[index] + strength * (source[index] - value);
       }
     }
   }
@@ -100,7 +100,7 @@ function prepareFaces() {
     original.src = filename;
     await original.decode();
     const canvas = cropFace(original);
-    softenFace(canvas, FACE_SOFTENING[filename] ?? 0);
+    sharpenFace(canvas, FACE_SHARPENING[filename] ?? 0);
     const prepared = new Image(canvas.width, canvas.height);
     prepared.alt = "محرک چهره";
     prepared.src = canvas.toDataURL("image/jpeg", FACE_PRESENTATION.jpegQuality);
