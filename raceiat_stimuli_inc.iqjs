@@ -17,7 +17,7 @@ stimulus items and labels immediately below this line.
 </item>
 
 <item attributeA>
-/ 1 = "شگفت‌انگیز"
+/ 1 = "حیرت‌آور"
 / 2 = "عالی"
 / 3 = "لذت"
 / 4 = "زیبا"
@@ -34,10 +34,10 @@ stimulus items and labels immediately below this line.
 <item attributeB>
 / 1 = "غم‌انگیز"
 / 2 = "وحشتناک"
-/ 3 = "عذاب"
+/ 3 = "رنج"
 / 4 = "دردناک"
 / 5 = "هولناک"
-/ 6 = "بسیار بد"
+/ 6 = "افتضاح"
 / 7 = "تحقیر کردن"
 / 8 = "زننده"
 </item>
