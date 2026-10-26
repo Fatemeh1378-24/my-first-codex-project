@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>بررسی ثبت آزمایشی</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f3f5f8;color:#172b3a;font:18px/1.9 Tahoma,Arial,sans-serif;padding:32px 16px}
+    main{max-width:650px;margin:8vh auto;background:#fff;padding:32px;border-radius:18px;border:1px solid #dce2e8}
+    h1{font-size:25px;margin:0 0 20px}p{margin:12px 0}button{font:inherit;padding:12px 24px;border:0;border-radius:10px;color:white;background:#175ddc;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}#result{white-space:pre-line;margin-top:24px}a{color:#175ddc}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>بررسی ثبت آزمایشی</h1>
+    <p>VPN خاموش باشد. این صفحه فقط یک ردیف آزمایشی ثبت می‌کند و آزمون اصلی را تغییر نمی‌دهد.</p>
+    <button id="send" type="button">ثبت آزمایشی از GitHub</button>
+    <p id="result" role="status" aria-live="polite">برای شروع، دکمهٔ بالا را بزنید.</p>
+  </main>
+  <script>
+    const endpoint = "https://script.google.com/macros/s/AKfycbwv4A2k_djoIfTnPmQjTbhUPQ3QJuWbtDuhPbVcpY9RpW_r-Btf0cjGw9skAeVs4ePv/exec";
+    const button = document.getElementById("send");
+    const result = document.getElementById("result");
+    button.addEventListener("click", async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      result.textContent = "در حال ارسال؛ لطفاً صبر کنید…";
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 45000);
+      try {
+        // Simple form POST avoids a JSON preflight. The browser must be able
+        // to READ the acknowledgement after Google's redirect. Never use
+        // no-cors: an opaque response cannot confirm that results were saved.
+        const response = await fetch(endpoint, {
+          method: "POST", mode: "cors", credentials: "omit", redirect: "follow",
+          body: new URLSearchParams({action: "save-test"}), signal: controller.signal
+        });
+        if (!response.ok || (await response.text()).trim() !== "Browser save OK") {
+          throw new Error("unconfirmed_response");
+        }
+        result.textContent = "ثبت آزمایشی از GitHub تأیید شد.\nاین نتیجه فقط مربوط به ردیف آزمایشی است؛ اتصال آزمون اصلی هنوز تغییر نکرده است.";
+      } catch {
+        result.textContent = "تأیید ثبت دریافت نشد.\nممکن است درخواست ثبت شده باشد، اما پاسخ آن به این صفحه نرسیده باشد. از این پیام عکس بگیرید تا بررسی کنیم.";
+      } finally {
+        clearTimeout(timer);
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
