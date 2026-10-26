@@ -1,0 +1,139 @@
+<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>کد ذخیرهٔ نتایج IAT</title>
+<style>body{font:18px/1.9 Tahoma,Arial;background:#f3f5f8;margin:0;padding:24px}main{max-width:900px;margin:auto;background:white;border-radius:16px;padding:28px}button{font:inherit;background:#175ddc;color:white;border:0;border-radius:10px;padding:12px 24px;cursor:pointer}textarea{width:100%;height:50vh;direction:ltr;text-align:left;font:14px/1.6 monospace;margin-top:20px}</style>
+<main><h1>کد ذخیرهٔ نتایج IAT</h1><p>این کد را در فایل Code.gs پروژهٔ IAT Connection Test جایگزین کنید. فایل Google Sheets را عمومی نکنید.</p><button id="copy">کپی کد کامل</button><p id="status" role="status" aria-live="polite"></p><textarea id="code" readonly aria-label="کد کامل">// IAT storage v1. The spreadsheet stays PRIVATE. No endpoint returns results.
+const IAT_FILE_ID = &quot;1RzEr-4xNB1oVIkXj35Fn48EKWujt0enh9jwpKfmAC58&quot;;
+const IAT_FIELDS = [
+  &quot;participant_id&quot;, &quot;group_number&quot;, &quot;age&quot;, &quot;gender&quot;, &quot;education_level&quot;,
+  &quot;employment_status&quot;, &quot;monthly_income&quot;, &quot;religiosity&quot;,
+  &quot;block_1_mean_rt&quot;, &quot;block_2_mean_rt&quot;, &quot;block_3_mean_rt&quot;, &quot;block_4_mean_rt&quot;,
+  &quot;block_5_mean_rt&quot;, &quot;block_6_mean_rt&quot;, &quot;block_7_mean_rt&quot;, &quot;d_score&quot;, &quot;d_short&quot;,
+  &quot;d_long&quot;, &quot;percent_correct&quot;, &quot;prop_rt_300&quot;, &quot;exclude_criteria_met&quot;,
+  &quot;mean_rt_iranian_female&quot;, &quot;mean_rt_iranian_male&quot;, &quot;mean_rt_afghan_female&quot;,
+  &quot;mean_rt_afghan_male&quot;, &quot;mean_rt_female_faces&quot;, &quot;mean_rt_male_faces&quot;,
+  &quot;gender_rt_difference&quot;, &quot;same_gender_advantage&quot;, &quot;sdo_responses&quot;, &quot;sdo_score&quot;,
+  &quot;mfq_responses&quot;, &quot;mfq_domain_scores&quot;
+];
+const IAT_DOMAINS = [&quot;care&quot;, &quot;equality&quot;, &quot;proportionality&quot;, &quot;loyalty&quot;, &quot;authority&quot;, &quot;purity&quot;];
+const IAT_SDO_KEYS = Array.from({length:16}, (_, i) =&gt; &quot;sdo_&quot; + String(i+1).padStart(2,&quot;0&quot;));
+const IAT_MFQ_KEYS = Array.from({length:36}, (_, i) =&gt; &quot;mfq_&quot; + String(i+1).padStart(2,&quot;0&quot;));
+const IAT_HEADERS = IAT_FIELDS.concat(IAT_SDO_KEYS, IAT_MFQ_KEYS,
+  IAT_DOMAINS.map(k =&gt; &quot;mfq_&quot; + k), [&quot;received_at&quot;, &quot;payload_sha256&quot;, &quot;payload_json&quot;]);
+
+function doGet() {
+  return output_({service:&quot;iat-sheets&quot;, schema_version:1, fields:IAT_FIELDS});
+}
+
+function output_(value) {
+  return ContentService.createTextOutput(JSON.stringify(value))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function canonical_(value) {
+  if (Array.isArray(value)) return &quot;[&quot; + value.map(canonical_).join(&quot;,&quot;) + &quot;]&quot;;
+  if (value &amp;&amp; typeof value === &quot;object&quot;) return &quot;{&quot; + Object.keys(value).sort()
+    .map(k =&gt; JSON.stringify(k) + &quot;:&quot; + canonical_(value[k])).join(&quot;,&quot;) + &quot;}&quot;;
+  return JSON.stringify(value);
+}
+
+function digest_(body) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, body, Utilities.Charset.UTF_8)
+    .map(b =&gt; ((b+256)%256).toString(16).padStart(2,&quot;0&quot;)).join(&quot;&quot;);
+}
+
+function object_(value) {
+  return value !== null &amp;&amp; typeof value === &quot;object&quot; &amp;&amp; !Array.isArray(value);
+}
+
+function exactKeys_(value, keys) {
+  return object_(value) &amp;&amp; Object.keys(value).length === keys.length
+    &amp;&amp; keys.every(k =&gt; Object.prototype.hasOwnProperty.call(value,k));
+}
+
+function valid_(p) {
+  if (!exactKeys_(p,IAT_FIELDS)) return false;
+  if (typeof p.participant_id !== &quot;string&quot; || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(p.participant_id)) return false;
+  if (![1,2].includes(p.group_number) || !Number.isInteger(p.age) || p.age&lt;20 || p.age&gt;40) return false;
+  const text = [&quot;gender&quot;,&quot;education_level&quot;,&quot;employment_status&quot;,&quot;monthly_income&quot;,&quot;religiosity&quot;];
+  if (!text.every(k =&gt; typeof p[k] === &quot;string&quot; &amp;&amp; p[k].length&gt;0 &amp;&amp; p[k].length&lt;=300)) return false;
+  const nonNumeric = [&quot;participant_id&quot;,&quot;group_number&quot;,&quot;age&quot;,&quot;exclude_criteria_met&quot;,
+    &quot;sdo_responses&quot;,&quot;mfq_responses&quot;,&quot;mfq_domain_scores&quot;].concat(text);
+  const numeric = IAT_FIELDS.filter(k =&gt; !nonNumeric.includes(k));
+  // Uncomputable IAT scores are null in the existing browser JSON payload.
+  if (!numeric.every(k =&gt; p[k]===null || typeof p[k]===&quot;number&quot; &amp;&amp; Number.isFinite(p[k]))) return false;
+  if (typeof p.exclude_criteria_met !== &quot;boolean&quot;) return false;
+  if (!exactKeys_(p.sdo_responses,IAT_SDO_KEYS) || !IAT_SDO_KEYS.every(k =&gt; Number.isInteger(p.sdo_responses[k]) &amp;&amp; p.sdo_responses[k]&gt;=1 &amp;&amp; p.sdo_responses[k]&lt;=5)) return false;
+  if (!exactKeys_(p.mfq_responses,IAT_MFQ_KEYS) || !IAT_MFQ_KEYS.every(k =&gt; Number.isInteger(p.mfq_responses[k]) &amp;&amp; p.mfq_responses[k]&gt;=0 &amp;&amp; p.mfq_responses[k]&lt;=4)) return false;
+  return exactKeys_(p.mfq_domain_scores,IAT_DOMAINS) &amp;&amp; IAT_DOMAINS.every(k =&gt;
+    typeof p.mfq_domain_scores[k]===&quot;number&quot; &amp;&amp; Number.isFinite(p.mfq_domain_scores[k])
+    &amp;&amp; p.mfq_domain_scores[k]&gt;=0 &amp;&amp; p.mfq_domain_scores[k]&lt;=4);
+}
+
+function cell_(value) {
+  if (value===null) return &quot;&quot;;
+  if (typeof value===&quot;object&quot;) return canonical_(value);
+  // Keep spreadsheet formulas out of cells; payload_json preserves raw values.
+  if (typeof value===&quot;string&quot; &amp;&amp; /^\s*[=+@-]/.test(value)) return &quot;\u200b&quot; + value;
+  return value;
+}
+
+function doPost(e) {
+  // Browser sends URL-encoded &quot;data&quot; to avoid a cross-origin JSON preflight.
+  // A readable JSON receipt, NOT an opaque no-cors response, confirms saving.
+  const raw = e &amp;&amp; e.parameter &amp;&amp; e.parameter.data;
+  if (typeof raw!==&quot;string&quot; || raw.length&gt;40000) return output_({saved:false,error:&quot;invalid_request&quot;});
+  let envelope;
+  try { envelope=JSON.parse(raw); } catch (_) { return output_({saved:false,error:&quot;invalid_json&quot;}); }
+  if (!exactKeys_(envelope,[&quot;schema_version&quot;,&quot;kind&quot;,&quot;payload&quot;]) || envelope.schema_version!==1
+    || ![&quot;results&quot;,&quot;probe&quot;].includes(envelope.kind) || !valid_(envelope.payload)) {
+    return output_({saved:false,error:&quot;invalid_results&quot;});
+  }
+  const p=envelope.payload;
+  const body=canonical_(p);
+  const hash=digest_(body);
+  const lock=LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return output_({saved:false,error:&quot;busy&quot;});
+  try {
+    const file=SpreadsheetApp.openById(IAT_FILE_ID);
+    const tab=envelope.kind===&quot;probe&quot; ? &quot;StorageChecks&quot; : &quot;Results&quot;;
+    let sheet=file.getSheetByName(tab);
+    if (!sheet) sheet=file.insertSheet(tab);
+    if (sheet.getMaxColumns()&lt;IAT_HEADERS.length) {
+      sheet.insertColumnsAfter(sheet.getMaxColumns(),IAT_HEADERS.length-sheet.getMaxColumns());
+    }
+    if (sheet.getLastRow()===0) {
+      sheet.getRange(1,1,1,IAT_HEADERS.length).setValues([IAT_HEADERS]);
+      sheet.setFrozenRows(1);
+    } else if (JSON.stringify(sheet.getRange(1,1,1,IAT_HEADERS.length).getValues()[0])!==JSON.stringify(IAT_HEADERS)) {
+      return output_({saved:false,error:&quot;headers_changed&quot;});
+    }
+    const count=sheet.getLastRow()-1;
+    if (count&gt;0) {
+      const hits=sheet.getRange(2,1,count,1).createTextFinder(p.participant_id)
+        .matchEntireCell(true).useRegularExpression(false).findAll();
+      if (hits.length&gt;1) return output_({saved:false,error:&quot;duplicate_rows_detected&quot;});
+      if (hits.length===1) {
+        const old=sheet.getRange(hits[0].getRow(),1,1,IAT_HEADERS.length).getValues()[0];
+        if (old[IAT_HEADERS.indexOf(&quot;payload_sha256&quot;)]!==hash
+          || old[IAT_HEADERS.indexOf(&quot;payload_json&quot;)]!==body) return output_({saved:false,error:&quot;id_conflict&quot;});
+        return output_({saved:true,participant_id:p.participant_id,payload_sha256:hash,duplicate:true});
+      }
+    }
+    const row=IAT_FIELDS.map(k =&gt; cell_(p[k]))
+      .concat(IAT_SDO_KEYS.map(k =&gt; p.sdo_responses[k]),IAT_MFQ_KEYS.map(k =&gt; p.mfq_responses[k]),
+        IAT_DOMAINS.map(k =&gt; p.mfq_domain_scores[k]),[new Date().toISOString(),hash,body]);
+    const next=sheet.getLastRow()+1;
+    if (next&gt;sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(),100);
+    sheet.getRange(next,1,1,row.length).setValues([row]);
+    SpreadsheetApp.flush();
+    const stored=sheet.getRange(next,1,1,row.length).getValues()[0];
+    if (!row.every((value,index) =&gt; value===stored[index])) return output_({saved:false,error:&quot;verification_failed&quot;});
+    return output_({saved:true,participant_id:p.participant_id,payload_sha256:hash,duplicate:false});
+  } catch (_) {
+    // Never expose spreadsheet contents, account data, or raw platform errors.
+    return output_({saved:false,error:&quot;storage_unavailable&quot;});
+  } finally {
+    lock.releaseLock();
+  }
+}
+</textarea></main>
+<script>const code=document.getElementById('code');document.getElementById('copy').addEventListener('click',async()=>{const status=document.getElementById('status');try{await navigator.clipboard.writeText(code.value);status.textContent='کد کامل کپی شد. به Apps Script برگردید، داخل کد قبلی کلیک کنید، Ctrl+A و سپس Ctrl+V بزنید. در پایان Ctrl+S بزنید.';}catch{code.focus();code.select();status.textContent='کد انتخاب شد؛ Ctrl+C بزنید تا کپی شود.';}});</script></html>
