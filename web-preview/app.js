@@ -122,6 +122,8 @@ const GENDER_LABELS = {
 // This browser-safe publishable key is intentionally used directly by the
 // static preview. Row-level security on public.participants remains the
 // database-side authorization boundary; never replace it with a secret key.
+const RELAY_URL = globalThis.IAT_RELAY_URL || "";
+
 const SUPABASE_URL = "https://iiogctpamxbomtjdzred.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BOV3oSNFL9JqF2TWbKhABg_FR3oon3d";
 
@@ -512,6 +514,13 @@ function participantInsertPayload(scores) {
 }
 
 async function saveParticipantResults(scores) {
+  if (RELAY_URL) {
+    if (!globalThis.IAT_RELAY) throw new Error("Relay client did not load");
+    const payload = state.recoveredResults || participantInsertPayload(scores);
+    await globalThis.IAT_RELAY.send(RELAY_URL, payload);
+    state.recoveredResults = null;
+    return;
+  }
   const response = await fetch(`${SUPABASE_URL}/rest/v1/participants`, {
     method: "POST",
     headers: {
@@ -535,12 +544,21 @@ async function submitResults() {
   el["retry-save-button"].hidden = true;
   try {
     await saveParticipantResults(state.scores);
+    if (RELAY_URL && globalThis.IAT_RELAY.list().length) {
+      state.recoveredResults = globalThis.IAT_RELAY.list()[0];
+      el["save-status"].textContent = "پاسخ‌های ارسال‌نشدهٔ دیگری در این مرورگر وجود دارد. برای ثبت آن‌ها دکمهٔ زیر را بزنید.";
+      el["retry-save-button"].hidden = false;
+      return;
+    }
     el["save-result"].hidden = true;
     el["completion-message"].hidden = false;
   } catch (error) {
-    console.error("Unable to save completed IAT results.", error);
+    console.error("Unable to save completed IAT results.");
     el["save-status"].className = "save-status failed";
     el["save-status"].textContent = "ذخیره نتایج انجام نشد. اتصال اینترنت را بررسی و دوباره تلاش کنید.";
+    if (RELAY_URL) el["save-status"].textContent = globalThis.IAT_RELAY?.durable
+      ? "ثبت پاسخ‌ها هنوز تأیید نشده است. یک نسخهٔ موقت در این مرورگر نگهداری شده؛ دوباره تلاش کنید و تا تأیید ثبت، اطلاعات مرورگر را پاک نکنید."
+      : "ثبت پاسخ‌ها هنوز تأیید نشده است. این صفحه را نبندید یا بازخوانی نکنید؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.";
     el["retry-save-button"].hidden = false;
   }
 }
@@ -595,3 +613,20 @@ renderQuestionnaire(el["mfq-items"], MFQ_QUESTIONNAIRE.items, MFQ_QUESTIONNAIRE.
 el["start-sdo-button"].addEventListener("click", showSdo);
 el["sdo-form"].addEventListener("submit", submitSdo);
 el["mfq-form"].addEventListener("submit", submitMfq);
+
+// A reload resumes completed, unsent results instead of requiring a new IAT.
+if (RELAY_URL && globalThis.IAT_RELAY) {
+  const pending = globalThis.IAT_RELAY.list();
+  if (pending.length) {
+    state.recoveredResults = pending[0];
+    el.intro.hidden = true;
+    el.summary.hidden = false;
+    el["completion-message"].hidden = true;
+    el["save-result"].hidden = false;
+    el["save-status"].textContent = "پاسخ‌های ارسال‌نشده در این مرورگر پیدا شد. برای ثبت آن‌ها دوباره تلاش کنید.";
+    el["retry-save-button"].hidden = false;
+  }
+  window.addEventListener("online", () => {
+    if (!el.summary.hidden && !el["retry-save-button"].hidden) submitResults();
+  });
+}
