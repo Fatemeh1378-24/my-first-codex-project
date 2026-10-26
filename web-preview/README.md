@@ -81,3 +81,16 @@ claim of identical random sequences or timing between JavaScript and Inquisit.
 ## Preview limitation
 
 This is a practical browser reproduction for review and customization. Browser timing and the scoring implementation should be independently validated before collecting research data.
+
+## Optional results relay
+
+The Cloudflare Worker in [`../relay/`](../relay/README.md) forwards the same
+participant payload to the existing Supabase table. It is not deployed or
+activated by default. After deploying and verifying it without VPN, set its full
+HTTPS `/results` endpoint in `relay-config.js`. When enabled, completed submissions
+use a temporary local browser outbox, validate a matching server receipt before
+showing thanks, and can recover unsent completed results after reload. Clearing
+browser data can remove that temporary copy. The deployment guide includes the
+required unique-index migration and the real database acceptance checks.
+
+Run `node relay/relay.test.mjs` from the repository root for the relay tests.
