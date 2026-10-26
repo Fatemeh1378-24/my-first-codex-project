@@ -15,7 +15,7 @@
           <p>با تشکر<br>فاطمه بابازاده<br>دانشجوی کارشناسی ارشد روان‌شناسی شناختی<br>پژوهشکده غیرانتفاعی علوم شناختی</p>
         </div>
         <form id="demographic-form" novalidate>
-          <label class="field"><span>سن خود را وارد کنید</span><input id="age" name="age" type="number" min="20" max="40" step="1" inputmode="numeric" required></label>
+          <label class="field"><span>سن خود را وارد کنید</span><input id="age" name="age" type="text" inputmode="numeric" aria-describedby="age-error" required></label>
           <p id="age-error" class="validation-message" role="alert" hidden>با سپاس از تمایل شما برای شرکت در این پژوهش، شرایط سنی لازم برای شرکت در این مطالعه ۲۰ تا ۴۰ سال است.</p>
           <label class="field"><span>جنسیت خود را انتخاب کنید</span><select id="gender" name="gender" required><option value="" selected disabled></option><option value="female">زن</option><option value="male">مرد</option><option value="prefer_not_to_say">ترجیح می‌دهم نگویم</option></select></label>
           <label class="field"><span>میزان تحصیلات خود را انتخاب کنید</span><select id="education-level" name="education_level" required><option value="" selected disabled></option><option>دیپلم</option><option>کارشناسی</option><option>کارشناسی ارشد</option><option>دکترا</option></select></label>
@@ -92,6 +92,6 @@
     <script src="questionnaire-data.js"></script>
     <script src="mfq-scoring.js"></script>
     <script src="sheets-client.js?v=1"></script>
-    <script src="app.js?v=sheets-1"></script>
+    <script src="app.js?v=sheets-age-1"></script>
   </body>
 </html>

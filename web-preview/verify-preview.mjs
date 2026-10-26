@@ -41,9 +41,9 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(`${sdoData}\n${sdoScoring}\n${questionnaireData}\n${mfqScoring}`, context);
-vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el };`, context);
+vm.runInContext(`${definitions}\nthis.preview = { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, parseAge, collectDemographics, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el };`, context);
 
-const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el } = context.preview;
+const { buildSequence, labelsFor, responseCue, instructionFor, calculateScores, generateParticipantId, parseAge, collectDemographics, isEligibleAge, participantInsertPayload, saveParticipantResults, submitMfq, SESSION_PARTICIPANT_ID, SESSION_GROUP, state, RESPONSES, el } = context.preview;
 const phrase = {
   attributeA: "یک کلمه خوب",
   attributeB: "یک کلمه بد",
@@ -140,6 +140,27 @@ assert.equal(isEligibleAge(31), true);
 assert.equal(isEligibleAge(40), true);
 assert.equal(isEligibleAge(41), false);
 assert.equal(isEligibleAge(20.5), false);
+
+// Every eligible age must validate and be stored as the same numeric age in
+// Latin, Persian, and Arabic digit forms. Also cover mixed and pasted input.
+const digitForms = ["0123456789", "۰۱۲۳۴۵۶۷۸۹", "٠١٢٣٤٥٦٧٨٩"];
+for (const digitSet of digitForms) {
+  const renderAge = age => String(age).replace(/[0-9]/g, digit => digitSet[Number(digit)]);
+  for (let age = 20; age <= 40; age++) {
+    const input = renderAge(age);
+    assert.equal(isEligibleAge(input), true, `eligible age ${input}`);
+    const demographics = collectDemographics({values: {age: input, gender: "female"}});
+    assert.equal(demographics.Age, age, `stored age ${input} must be numeric ${age}`);
+  }
+  for (const age of [0, 19, 41, 99]) assert.equal(isEligibleAge(renderAge(age)), false);
+}
+assert.equal(parseAge(" ۲۵ "), 25);
+assert.equal(parseAge("۲5"), 25);
+for (const invalid of ["", " ", null, undefined, "۲۰٫۵", "20.5", "2e1", "+20", "-۲۰", "بیست", "۲۰a"]) {
+  assert.equal(isEligibleAge(invalid), false, `reject invalid age ${invalid}`);
+}
+assert.match(html, /id="age"[^>]*type="text"[^>]*inputmode="numeric"/, "age field must retain Persian digits while offering the numeric keyboard");
+
 assert.match(css, /font-family:\s*Vazirmatn, Tahoma, Arial, sans-serif/);
 assert.match(css, /fonts\.googleapis\.com\/css2\?family=Vazirmatn/);
 assert.match(css, /\.face-row img[^}]*object-fit: cover/);

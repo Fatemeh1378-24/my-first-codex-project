@@ -179,8 +179,18 @@ function collectRequiredResponses(form, items, errorElement) {
   return firstMissing ? null : responses;
 }
 
+function parseAge(value) {
+  // Native number inputs can discard Persian digits before JavaScript sees them.
+  // Normalize text input for both validation and the stored numeric age.
+  const digits = String(value ?? "").trim().replace(/[۰-۹٠-٩]/g, digit => {
+    const code = digit.charCodeAt(0);
+    return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660);
+  });
+  return /^[0-9]+$/.test(digits) ? Number(digits) : NaN;
+}
+
 function isEligibleAge(value) {
-  const age = Number(value);
+  const age = parseAge(value);
   return Number.isInteger(age) && age >= 20 && age <= 40;
 }
 
@@ -188,7 +198,7 @@ function collectDemographics(form) {
   const values = new FormData(form);
   const normalizedGender = values.get("gender");
   return {
-    Age: Number(values.get("age")),
+    Age: parseAge(values.get("age")),
     Gender: GENDER_LABELS[normalizedGender],
     Gender_Normalized: normalizedGender,
     Education_Level: values.get("education_level"),
