@@ -119,11 +119,8 @@ const GENDER_LABELS = {
   prefer_not_to_say: "ترجیح می‌دهم نگویم"
 };
 
-// This browser-safe publishable key is intentionally used directly by the
-// static preview. Row-level security on public.participants remains the
-// database-side authorization boundary; never replace it with a secret key.
-const SUPABASE_URL = "https://iiogctpamxbomtjdzred.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BOV3oSNFL9JqF2TWbKhABg_FR3oon3d";
+// Completed results are sent through sheets-client.js; no database credential
+// or direct Supabase request is needed in the participant browser.
 
 // Keep participant-facing instructions tied to the same response configuration
 // used by the keyboard and touch handlers below.
@@ -512,19 +509,10 @@ function participantInsertPayload(scores) {
 }
 
 async function saveParticipantResults(scores) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/participants`, {
-    method: "POST",
-    headers: {
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal"
-    },
-    body: JSON.stringify(participantInsertPayload(scores))
-  });
-  if (response.status !== 201 && response.status !== 204) {
-    throw new Error(`Supabase request failed with status ${response.status}`);
-  }
+  if (!globalThis.IAT_SHEETS) throw new Error("Storage client unavailable");
+  const payload = state.recoveredResults || participantInsertPayload(scores);
+  await globalThis.IAT_SHEETS.send(payload);
+  state.recoveredResults = null;
 }
 
 async function submitResults() {
@@ -535,12 +523,21 @@ async function submitResults() {
   el["retry-save-button"].hidden = true;
   try {
     await saveParticipantResults(state.scores);
+    const pending = globalThis.IAT_SHEETS.pending();
+    if (pending.length) {
+      state.recoveredResults = pending[0];
+      el["save-status"].textContent = "پاسخ‌های ارسال‌نشدهٔ دیگری در این مرورگر وجود دارد. برای ثبت آن‌ها دوباره تلاش کنید.";
+      el["retry-save-button"].hidden = false;
+      return;
+    }
     el["save-result"].hidden = true;
     el["completion-message"].hidden = false;
   } catch (error) {
-    console.error("Unable to save completed IAT results.", error);
+    console.error("Unable to save completed IAT results.");
     el["save-status"].className = "save-status failed";
-    el["save-status"].textContent = "ذخیره نتایج انجام نشد. اتصال اینترنت را بررسی و دوباره تلاش کنید.";
+    el["save-status"].textContent = globalThis.IAT_SHEETS?.durable
+      ? "ثبت پاسخ‌ها هنوز تأیید نشده است. پاسخ‌ها موقتاً در این مرورگر نگهداری شده‌اند؛ اتصال اینترنت را بررسی و دوباره تلاش کنید."
+      : "ثبت پاسخ‌ها هنوز تأیید نشده است. این صفحه را نبندید یا بازخوانی نکنید؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.";
     el["retry-save-button"].hidden = false;
   }
 }
@@ -595,3 +592,20 @@ renderQuestionnaire(el["mfq-items"], MFQ_QUESTIONNAIRE.items, MFQ_QUESTIONNAIRE.
 el["start-sdo-button"].addEventListener("click", showSdo);
 el["sdo-form"].addEventListener("submit", submitSdo);
 el["mfq-form"].addEventListener("submit", submitMfq);
+
+// Recover completed submissions only; this does not restore a half-finished IAT.
+if (globalThis.IAT_SHEETS) {
+  const pending = globalThis.IAT_SHEETS.pending();
+  if (pending.length) {
+    state.recoveredResults = pending[0];
+    el.intro.hidden = true;
+    el.summary.hidden = false;
+    el["completion-message"].hidden = true;
+    el["save-result"].hidden = false;
+    el["save-status"].textContent = "پاسخ‌های ارسال‌نشده در این مرورگر پیدا شد. برای ثبت آن‌ها دوباره تلاش کنید.";
+    el["retry-save-button"].hidden = false;
+  }
+  window.addEventListener("online", () => {
+    if (!el.summary.hidden && !el["retry-save-button"].hidden) submitResults();
+  });
+}

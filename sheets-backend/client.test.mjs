@@ -48,3 +48,59 @@ test('concurrent clicks share one flight; blocked local storage still permits co
  const broken={getItem(){throw new Error('blocked');},setItem(){throw new Error('blocked');}};
  const other=client(broken,network(server));await other.send(fixture);assert.equal(other.durable,false);
 });
+
+function studyBrowser(storage,fetcher){
+ const html=fs.readFileSync(new URL('../web-preview/index.html',import.meta.url),'utf8');
+ const nodes=[...html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)].map(([tag,id])=>({
+  id,hidden:/\bhidden\b/.test(tag),textContent:'',className:'',addEventListener(){},
+  querySelector:()=>({classList:{toggle(){}},scrollIntoView(){}})
+ }));
+ const form=nodes.find(n=>n.id==='mfq-form');
+ form.values=Object.fromEntries(Object.entries(fixture.mfq_responses).map(([k,v])=>[k,String(v)]));
+ const ctx={document:{querySelectorAll:()=>nodes,addEventListener(){}},window:{addEventListener(){}},
+  localStorage:storage,fetch:fetcher,URLSearchParams,TextEncoder,crypto:webcrypto,AbortController,
+  setTimeout,clearTimeout,location:{search:'?group=1'},console:{error(){}},
+  FormData:class{constructor(form){this.values=form.values;}get(k){return this.values[k]??null;}}};
+ vm.createContext(ctx);
+ for(const file of ['sdo-data.js','sdo-scoring.js','questionnaire-data.js','mfq-scoring.js','sheets-client.js','app.js']){
+  vm.runInContext(fs.readFileSync(new URL('../web-preview/'+file,import.meta.url),'utf8'),ctx);
+ }
+ return {ctx,nodes,node:id=>nodes.find(n=>n.id===id)};
+}
+
+test('the actual MFQ completion flow sends all fields to Sheets and exposes no scores to participants',async()=>{
+ const server=runtime(),storage=store(),study=studyBrowser(storage,network(server));
+ const app=fs.readFileSync(new URL('../web-preview/app.js',import.meta.url),'utf8');
+ const map=app.split('function participantInsertPayload(scores) {')[1].split('\n}')[0];
+ const scores=Object.fromEntries([...map.matchAll(/([a-z_0-9]+): scores\.([A-Za-z_0-9]+)/g)].map(([,column,key])=>[key,fixture[column]]));
+ vm.runInContext(`state.scores=${JSON.stringify(scores)};
+  state.sdoResponses=${JSON.stringify(fixture.sdo_responses)};state.sdoScore=3;
+  el['mfq-questionnaire'].hidden=false;
+  submitMfq({preventDefault(){},currentTarget:el['mfq-form']});`,study.ctx);
+ // submitMfq starts asynchronous saving; join its existing in-flight request.
+ await vm.runInContext('saveParticipantResults(state.scores)',study.ctx);
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(server.sheets.get('Results').rows.length,2);
+ assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1].at(-1)),fixture);
+ assert.equal(study.node('completion-message').hidden,false);
+ assert.equal(study.node('save-result').hidden,true);
+ assert.equal(storage.length,0);
+});
+
+test('the actual app restores a completed offline submission after reload and waits for a confirmed receipt',async()=>{
+ const server=runtime(),storage=store();
+ await assert.rejects(client(storage,async()=>{throw new TypeError('offline');}).send(fixture));
+ const failed=studyBrowser(storage,async()=>{throw new TypeError('offline');});
+ assert.equal(failed.node('intro').hidden,true);
+ assert.equal(failed.node('summary').hidden,false);
+ assert.equal(failed.node('completion-message').hidden,true);
+ await vm.runInContext('submitResults()',failed.ctx);
+ assert.equal(failed.node('completion-message').hidden,true);
+ assert.equal(failed.node('retry-save-button').hidden,false);
+ const recovered=studyBrowser(storage,network(server));
+ await vm.runInContext('submitResults()',recovered.ctx);
+ assert.equal(recovered.node('completion-message').hidden,false);
+ assert.equal(recovered.node('save-result').hidden,true);
+ assert.equal(storage.length,0);
+ assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1].at(-1)),fixture);
+});

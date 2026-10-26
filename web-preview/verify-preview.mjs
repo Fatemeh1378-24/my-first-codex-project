@@ -16,7 +16,7 @@ const sdoScoring = fs.readFileSync(new URL("sdo-scoring.js", import.meta.url), "
 const inquisit = fs.readFileSync(new URL("../pictureiat_inc.iqjs", import.meta.url), "utf8");
 const definitions = source.slice(0, source.indexOf('document.addEventListener("keydown"'));
 const requests = [];
-let responseStatus = 201;
+let responseStatus = 200;
 const uiNodes = [...html.matchAll(/\bid="([^"]+)"/g)].map(([, id]) => ({ id, hidden: false, className: "", textContent: "" }));
 const mfqForm = uiNodes.find(node => node.id === "mfq-form");
 mfqForm.values = Object.fromEntries(Array.from({ length: 36 }, (_, index) => [`mfq_${String(index + 1).padStart(2, "0")}`, "2"]));
@@ -29,9 +29,14 @@ const context = {
     constructor(form) { this.values = form.values; }
     get(name) { return this.values[name] ?? null; }
   },
-  fetch: async (...args) => {
-    requests.push(args);
-    return { ok: responseStatus >= 200 && responseStatus < 300, status: responseStatus };
+  IAT_SHEETS: {
+    pending: () => [],
+    durable: true,
+    send: async payload => {
+      requests.push(payload);
+      if (responseStatus !== 200) throw new Error("Storage receipt not confirmed");
+      return { saved: true, participant_id: payload.participant_id };
+    }
   }
 };
 vm.createContext(context);
@@ -137,9 +142,9 @@ assert.equal(isEligibleAge(41), false);
 assert.equal(isEligibleAge(20.5), false);
 assert.match(css, /font-family:\s*Vazirmatn, Tahoma, Arial, sans-serif/);
 assert.match(css, /fonts\.googleapis\.com\/css2\?family=Vazirmatn/);
-assert.match(css, /\.face-row img[^}]*object-fit: contain/);
-assert.match(source, /el\.stimulus\.innerHTML = `<img src="\$\{trial\.value\}" alt="محرک چهره">`/, "face trials must render through the shared stimulus image element");
-assert.match(css, /\.stimulus img \{[^}]*width: min\(70vw, 250px\);[^}]*height: min\(48vh, 320px\);[^}]*object-fit: contain;[^}]*object-position: center;/, "every rendered face must use the same centered, aspect-ratio-preserving viewport");
+assert.match(css, /\.face-row img[^}]*object-fit: cover/);
+assert.ok(source.includes("el.stimulus.replaceChildren(preparedFaces.get(trial.value));"), "face trials must reuse the prepared stimulus image");
+assert.ok(css.includes("width: min(70vw, 160px, 38.4vh); height: auto; aspect-ratio: 4 / 5; object-fit: cover; object-position: center;"), "faces retain the calibrated centered 4:5 viewport");
 const elementReferences = new Set([
   ...source.matchAll(/el\["([^"]+)"\]/g),
   ...source.matchAll(/\bel\.([A-Za-z_$][\w$-]*)/g)
@@ -153,10 +158,9 @@ assert.equal(state.participant.Group, SESSION_GROUP);
 assert.equal(SESSION_GROUP, 1, "query-string counterbalancing assignment should be preserved");
 assert.match(source, /state\.trials\.push\(\{ \.\.\.state\.participant, \.\.\.trial \}\)/, "raw trials must carry the session metadata");
 assert.match(source, /scores = \{ \.\.\.state\.participant, \.\.\.calculateScores\(\) \}/, "score outputs must carry the session metadata");
-assert.match(source, /fetch\(`\$\{SUPABASE_URL\}\/rest\/v1\/participants`/, "completed results must target public.participants through Supabase REST");
-assert.match(source, /apikey: SUPABASE_PUBLISHABLE_KEY/);
-assert.match(source, /Authorization: `Bearer \$\{SUPABASE_PUBLISHABLE_KEY\}`/);
-assert.match(source, /body: JSON\.stringify\(participantInsertPayload\(scores\)\)/, "the completed participant score row must be mapped to the database schema");
+assert.match(source, /await globalThis\.IAT_SHEETS\.send\(payload\)/, "completed payload must use confirmed Sheets storage");
+assert.doesNotMatch(source, /SUPABASE_URL|SUPABASE_PUBLISHABLE_KEY|rest\/v1\/participants/, "participant browser must not depend on direct Supabase access");
+assert.match(html, /<script src="sheets-client\.js\?v=1"><\/script>/);
 assert.match(html, /id="save-status"[^>]*class="save-status"/);
 assert.match(html, /id="retry-save-button"/);
 const completionCopy = [
@@ -221,25 +225,10 @@ assert.deepEqual(Object.keys(mappedRow.mfq_responses), []);
 assert.deepEqual(Object.keys(mappedRow.mfq_domain_scores), []);
 await saveParticipantResults(resultRow);
 assert.equal(requests.length, 1);
-const [requestUrl, requestOptions] = requests[0];
-assert.equal(requestUrl, "https://iiogctpamxbomtjdzred.supabase.co/rest/v1/participants");
-assert.equal(requestOptions.method, "POST");
-assert.equal(requestOptions.headers.apikey, "sb_publishable_BOV3oSNFL9JqF2TWbKhABg_FR3oon3d");
-assert.equal(requestOptions.headers.Authorization, `Bearer ${requestOptions.headers.apikey}`);
-assert.equal(requestOptions.headers.Prefer, "return=minimal", "the insert must not request the inserted row or upsert existing data");
-assert.doesNotMatch(requestOptions.headers.Prefer, /return=representation|resolution=/);
-assert.equal(requestOptions.body, JSON.stringify(mappedRow));
-
-responseStatus = 204;
-await saveParticipantResults(resultRow);
+assert.deepEqual(requests[0], mappedRow, "storage transport must receive all original fields without changing values");
+responseStatus = 503;
+await assert.rejects(saveParticipantResults(resultRow), /Storage receipt not confirmed/);
 responseStatus = 200;
-await assert.rejects(
-  saveParticipantResults(resultRow),
-  /Supabase request failed with status 200/,
-  "only PostgREST's successful INSERT statuses should be accepted"
-);
-
-responseStatus = 201;
 state.scores = resultRow;
 el["mfq-questionnaire"].hidden = false;
 el.summary.hidden = true;
@@ -403,9 +392,9 @@ assert.match(source, /errorElement\.hidden = !firstMissing/, "missing questionna
 
 console.log("Verified dynamic instructions and response mappings for all 7 blocks in groups 1 and 2.");
 console.log("Verified the exact six-field demographic form, age boundary validation, session linkage, and Vazirmatn styling.");
-console.log("Verified E/left and I/right controls plus non-cropping overview and trial image styles.");
+console.log("Verified E/left and I/right controls plus existing centered overview and calibrated trial image styles.");
 console.log("Verified that no participant-facing trial-data download control or handler exists.");
 console.log("Verified that successful completion is score-free and terminal, while save failure retains retry.");
 console.log("Verified D-score direction in both groups, component averaging, gender RT outputs, and >10% fast-response exclusion.");
-console.log("Verified all 16 approved Persian SDO items, 1–5 responses, items 9–16 reverse scoring, final mean, validation, and Supabase payload fields.");
+console.log("Verified all 16 approved Persian SDO items, 1–5 responses, items 9–16 reverse scoring, final mean, validation, and all 33 compatible storage payload fields.");
 console.log("Verified the SDO-to-MFQ flow, exact MFQ-2 content, 0–4 responses, required-answer validation, and all six domain means.");

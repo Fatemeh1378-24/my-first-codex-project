@@ -4,6 +4,7 @@ globalThis.IAT_SHEETS = (() => {
   const prefix = "iat.sheets.pending.v1.";
   const memory = new Map();
   const flights = new Map();
+  const acknowledged = new Set();
   let durable = true;
   function canonical(value) {
     if (Array.isArray(value)) return "[" + value.map(canonical).join(",") + "]";
@@ -26,7 +27,7 @@ globalThis.IAT_SHEETS = (() => {
       }
     } catch {durable=false;}
     return [...entries].filter(([key])=>key.startsWith(prefix+"results.")).flatMap(([key,body])=>{
-      try {const p=JSON.parse(body);return key===prefix+"results."+p.participant_id ? [p] : [];}
+      try {const p=JSON.parse(body);return !acknowledged.has(key) && key===prefix+"results."+p.participant_id ? [p] : [];}
       catch {return [];}
     });
   }
@@ -64,6 +65,7 @@ globalThis.IAT_SHEETS = (() => {
         if (receipt.saved!==true || receipt.participant_id!==p.participant_id || receipt.payload_sha256!==hash) {
           throw new Error(receipt.saved===false ? "storage_"+receipt.error : "invalid_receipt");
         }
+        acknowledged.add(key);
         memory.delete(key);
         try {globalThis.localStorage?.removeItem(key);} catch { /* Retry is safe. */ }
         return receipt;

@@ -1,10 +1,9 @@
 # Google Sheets storage for the existing IAT
 
 This is a staged alternative to the inaccessible Supabase/Cloudflare paths.
-The production IAT still uses Supabase until its adapter is explicitly changed.
+The production IAT now uses sheets-client.js and the private Results sheet. Supabase data is retained, but new submissions are not written there.
 The owner's anonymous, no-VPN tests have established readable responses for
-simple form POSTs from GitHub to Apps Script; the complete payload must pass
-the new acceptance check after deploying Code.gs.
+simple form POSTs from GitHub to Apps Script; the complete 33-field synthetic payload and duplicate receipt were then confirmed live without VPN, with a single matching row in StorageChecks. A full actual IAT acceptance check is still required before participant distribution.
 
 ## Setup
 
@@ -20,9 +19,9 @@ the new acceptance check after deploying Code.gs.
    row for the displayed UUID. Check all 33 original fields, the 52 raw item
    answers, and the six MFQ domain scores. The synthetic D-score is 0.4; mean
    female RT is 520, mean male RT 590, and male-minus-female difference 70 ms.
-4. Only after that check, integrate sheets-client.js with the IAT completion
-   flow, recover pending completed submissions on reload, and require a matching
-   receipt before displaying success. Do not use `no-cors` as proof of saving.
+4. The IAT completion flow uses sheets-client.js, recovers pending completed
+   submissions on reload, and requires a matching receipt before displaying
+   success. Do not use `no-cors` as proof of saving.
 5. Run an actual full IAT and inspect its Results row. Keep regular private
    exports/backups and test restore. Neither a free service nor temporary browser
    storage guarantees permanent retention or continuous availability.
@@ -80,8 +79,8 @@ From repository root:
 node sheets-backend/client.test.mjs
 ```
 
-13 checks exercise actual backend/client code with mocked Sheets services,
+15 checks exercise actual backend/client code with mocked Sheets services,
 including all fields, gender RT difference, final IAT score, 52 raw answers,
 digest agreement, duplicate retries, conflicts, lost acknowledgements, quota
-errors, header changes, private GET responses and local-storage failure. They
+errors, header changes, private GET responses and local-storage failure. The additional application tests cover MFQ completion and reload recovery. They
 do not substitute for the live acceptance checks above.

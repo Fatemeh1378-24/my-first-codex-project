@@ -6,8 +6,8 @@ This repository contains the original Inquisit task and a dependency-free browse
 
 After GitHub Pages is enabled, the preview is available at:
 
-- Group 1: <https://fatemeh1378-24.github.io/my-first-codex-project/web-preview/?group=1>
-- Group 2: <https://fatemeh1378-24.github.io/my-first-codex-project/web-preview/?group=2>
+- Group 1: <https://fatemeh1378-24.github.io/my-first-codex-project/?group=1>
+- Group 2: <https://fatemeh1378-24.github.io/my-first-codex-project/?group=2>
 
 The URL without a `group` query parameter randomly assigns one of the two block orders.
 
@@ -19,4 +19,4 @@ The URL without a `group` query parameter randomly assigns one of the two block 
 4. Open the **Actions** tab and select **Deploy Race IAT preview to GitHub Pages**. The workflow runs automatically after the merge; if needed, select **Run workflow** → **Run workflow**.
 5. When the deployment finishes, use **Settings** → **Pages** → **Visit site**.
 
-The workflow publishes the repository without moving files so the preview's existing relative image paths continue to resolve. The [`.nojekyll`](.nojekyll) marker ensures GitHub Pages serves the repository as a plain static site.
+The workflow publishes the contents of `web-preview` at the project site root, keeping image and script paths relative to that root. Results are stored in the owner's private Google Sheet via Apps Script; see [storage setup, field preservation and checks](sheets-backend/README.md).
