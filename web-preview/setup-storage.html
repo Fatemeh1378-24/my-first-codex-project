@@ -21,10 +21,12 @@ const IAT_MFQ_KEYS = Array.from({length:36}, (_, i) =&gt; &quot;mfq_&quot; + Str
 // Append new columns after the entire original layout, preserving old rows.
 const IAT_LEGACY_HEADERS = IAT_LEGACY_FIELDS.concat(IAT_SDO_KEYS, IAT_MFQ_KEYS,
   IAT_DOMAINS.map(k =&gt; &quot;mfq_&quot; + k), [&quot;received_at&quot;, &quot;payload_sha256&quot;, &quot;payload_json&quot;]);
-const IAT_HEADERS = IAT_LEGACY_HEADERS.concat(IAT_DETAIL_FIELDS);
+const IAT_DETAILS_HEADERS = IAT_LEGACY_HEADERS.concat(IAT_DETAIL_FIELDS);
+const IAT_NATIONALITY_HEADERS = [&quot;mean_rt_iranian_faces&quot;, &quot;mean_rt_afghan_faces&quot;, &quot;nationality_rt_difference&quot;];
+const IAT_HEADERS = IAT_DETAILS_HEADERS.concat(IAT_NATIONALITY_HEADERS);
 
 function doGet() {
-  return output_({service:&quot;iat-sheets&quot;, schema_version:1, fields:IAT_FIELDS, iat_details_version:1});
+  return output_({service:&quot;iat-sheets&quot;, schema_version:1, fields:IAT_FIELDS, iat_details_version:1, nationality_means_version:1});
 }
 
 function output_(value) {
@@ -113,6 +115,20 @@ function cell_(value) {
   return value;
 }
 
+function nationalityFaceMeans_(p) {
+  // Use each retained face trial directly, regardless of depicted gender.
+  // No raw IAT in old 33-field records: leave these columns blank.
+  const totals={targetA:{sum:0,count:0},targetB:{sum:0,count:0}};
+  for (const t of p.iat_trials || []) {
+    if (![3,4,6,7].includes(t.block) || !Number.isFinite(t.rt) || t.rt&lt;0 || t.rt&gt;10000) continue;
+    const group=totals[t.category];
+    if (group) {group.sum+=t.rt;group.count++;}
+  }
+  const iranian=totals.targetA.count ? totals.targetA.sum/totals.targetA.count : null;
+  const afghan=totals.targetB.count ? totals.targetB.sum/totals.targetB.count : null;
+  return [iranian,afghan,iranian===null || afghan===null ? null : afghan-iranian];
+}
+
 function doPost(e) {
   // Browser sends URL-encoded &quot;data&quot; to avoid a cross-origin JSON preflight.
   // A readable JSON receipt, NOT an opaque no-cors response, confirms saving.
@@ -145,10 +161,12 @@ function doPost(e) {
     } else {
       const headers=sheet.getRange(1,1,1,IAT_HEADERS.length).getValues()[0];
       if (JSON.stringify(headers)!==JSON.stringify(IAT_HEADERS)) {
-        const legacyMatches=JSON.stringify(headers.slice(0,IAT_LEGACY_HEADERS.length))===JSON.stringify(IAT_LEGACY_HEADERS);
-        const tailEmpty=headers.slice(IAT_LEGACY_HEADERS.length).every(value=&gt;value===&quot;&quot;);
-        if (!legacyMatches || !tailEmpty) return output_({saved:false,error:&quot;headers_changed&quot;});
-        sheet.getRange(1,IAT_LEGACY_HEADERS.length+1,1,IAT_DETAIL_FIELDS.length).setValues([IAT_DETAIL_FIELDS]);
+        const previous=[IAT_LEGACY_HEADERS,IAT_DETAILS_HEADERS].find(prefix =&gt;
+          JSON.stringify(headers.slice(0,prefix.length))===JSON.stringify(prefix)
+          &amp;&amp; headers.slice(prefix.length).every(value=&gt;value===&quot;&quot;));
+        if (!previous) return output_({saved:false,error:&quot;headers_changed&quot;});
+        const appended=IAT_HEADERS.slice(previous.length);
+        sheet.getRange(1,previous.length+1,1,appended.length).setValues([appended]);
       }
     }
     const count=sheet.getLastRow()-1;
@@ -166,7 +184,8 @@ function doPost(e) {
     const row=IAT_LEGACY_FIELDS.map(k =&gt; cell_(p[k]))
       .concat(IAT_SDO_KEYS.map(k =&gt; p.sdo_responses[k]),IAT_MFQ_KEYS.map(k =&gt; p.mfq_responses[k]),
         IAT_DOMAINS.map(k =&gt; p.mfq_domain_scores[k]),[new Date().toISOString(),hash,body],
-        IAT_DETAIL_FIELDS.map(k =&gt; Object.prototype.hasOwnProperty.call(p,k) ? cell_(p[k]) : &quot;&quot;));
+        IAT_DETAIL_FIELDS.map(k =&gt; Object.prototype.hasOwnProperty.call(p,k) ? cell_(p[k]) : &quot;&quot;),
+        nationalityFaceMeans_(p).map(cell_));
     const next=sheet.getLastRow()+1;
     if (next&gt;sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(),100);
     sheet.getRange(next,1,1,row.length).setValues([row]);

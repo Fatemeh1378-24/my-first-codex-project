@@ -100,3 +100,22 @@ allow independent rescoring without repeating demographics on every trial.
 Old sessions lack these raw records and cannot be reconstructed retroactively.
 
 Reference: https://www.millisecond.com/library/v7/iat/raceiat/raceiat/raceiat.manual
+
+## Combined nationality face RT means
+
+The Sheets backend appends three numeric columns without changing the browser
+payload, D scores, gender-specific means or questionnaires:
+
+- `mean_rt_iranian_faces`: arithmetic mean of all retained targetA (Iranian) trials.
+- `mean_rt_afghan_faces`: arithmetic mean of all retained targetB (Afghan) trials.
+- `nationality_rt_difference`: Afghan mean minus Iranian mean, in milliseconds.
+
+These means use raw final-correct RTs from combined blocks 3, 4, 6 and 7 with
+0 <= RT <= 10,000 ms, including initially incorrect trials after correction.
+Practice-only blocks, word stimuli and >10,000 ms trials are excluded. Depicted
+gender has no role. Each retained trial has equal weight. A positive difference
+means slower responses to Afghan faces; a negative difference means slower
+responses to Iranian faces. This RT difference is not the IAT D score. If a
+nationality has no retained trials, its mean and the difference are blank.
+Previously stored rows are left unchanged; future submissions with raw IAT data
+receive the new columns automatically after the Apps Script deployment update.
