@@ -235,7 +235,7 @@ const expectedSupabaseColumns = [
   "mean_rt_afghan_female", "mean_rt_afghan_male",
   "mean_rt_female_faces", "mean_rt_male_faces",
   "gender_rt_difference", "same_gender_advantage"
-  , "sdo_responses", "sdo_score", "mfq_responses", "mfq_domain_scores"
+  , "sdo_responses", "sdo_score", "mfq_responses", "mfq_domain_scores", "iat_trials", "iat_quality", "iat_interpretation"
 ];
 const mappedRow = participantInsertPayload(resultRow);
 assert.deepEqual(Object.keys(mappedRow), expectedSupabaseColumns, "insert payload keys must exactly match public.participants columns");
@@ -417,5 +417,5 @@ console.log("Verified E/left and I/right controls plus existing centered overvie
 console.log("Verified that no participant-facing trial-data download control or handler exists.");
 console.log("Verified that successful completion is score-free and terminal, while save failure retains retry.");
 console.log("Verified D-score direction in both groups, component averaging, gender RT outputs, and >10% fast-response exclusion.");
-console.log("Verified all 16 approved Persian SDO items, 1–5 responses, items 9–16 reverse scoring, final mean, validation, and all 33 compatible storage payload fields.");
+console.log("Verified all 16 approved Persian SDO items, 1–5 responses, items 9–16 reverse scoring, final mean, validation, and the original storage fields plus IAT detail outputs.");
 console.log("Verified the SDO-to-MFQ flow, exact MFQ-2 content, 0–4 responses, required-answer validation, and all six domain means.");

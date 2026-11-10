@@ -34,8 +34,10 @@ This project follows the bundled Millisecond/Inquisit correction-required varian
 3. `percentCorrect` is the percentage of initially correct responses among those
    eligible trials.
 4. `propRT300` is the proportion of all 120 combined-block trials whose final
-   corrected latency is below 300 ms. `excludeCriteriaMet` is true/1 only when this
-   proportion is greater than 0.10 (exactly 10% does not meet the criterion).
+   corrected latency is below 300 ms. The fast-response exclusion applies when this proportion is greater than
+   0.10 (exactly 10% does not meet it). The existing denominator of all combined
+   trials is retained for Millisecond compatibility. `excludeCriteriaMet` is now
+   also true for an invalid or incomplete IAT, with explicit reasons below.
 
 These rules intentionally match `pictureiat_inc.iqjs`: correction is required,
 the final latency is stored, the upper inclusion bound is `<= 10000`, and the
@@ -63,3 +65,38 @@ internally during the session, without exposing a participant-facing download. T
 browser generates an anonymous UUID when the participant session loads, never
 displays or accepts an ID field, and reuses that immutable ID for IAT restarts.
 Inquisit retains its native system-generated subject ID and group fields.
+
+## IAT output validity and interpretation
+
+The valid-data D formula, correction-required timing, 10,000 ms upper cutoff,
+questionnaires, stimuli and participant flow are unchanged.
+
+`iat_quality` records a version, mathematical/protocol validity (`valid`),
+analysis exclusion (`excluded`), machine-readable `reasons`, combined-trial
+counts, retained counts, slow/fast counts, and the four retained scoring-cell
+counts. A numerically computable result can still be excluded for too many fast
+responses. Invalidity reasons are incomplete test blocks, invalid latencies,
+empty cells, insufficient pooled trials, zero pooled variance, and nonfinite D.
+Nonfinite D components and overall D are explicit JSON nulls. All invalid or
+excluded results have `exclude_criteria_met=true`; records are retained for audit,
+not deleted. No additional error-rate cutoff is introduced.
+
+`iat_interpretation` applies the Millisecond suggested boundaries symmetrically:
+absolute D <= .15: `little_to_no`; .15 < absolute D <= .35: `slight`;
+.35 < absolute D < .65: `moderate`; absolute D >= .65: `strong`.
+Direction is `iranian` for positive D, `afghan` for negative D, or `little_to_no`
+inside the neutral band. Invalid/excluded results have null direction/strength
+and a corresponding `status`. These are research output fields, not a diagnosis
+or participant-facing feedback.
+
+`iat_trials` preserves all 180 recorded trials, including practice and >10s
+responses, in presentation order. Each record contains `trial` (1-based), `block`,
+`category`, `stimulus`, `expected`, `initial`, `response` (left/right), `method`
+(keyboard/touch for the final response), `correct` (initial accuracy), `first_rt`
+and `rt` (first/final-correct latency in ms). The parent record supplies participant
+ID and group. For group 1, blocks 3/4 are compatible and 6/7 incompatible; group 2
+reverses this assignment. Blocks 3/6 are short and 4/7 long. Together these fields
+allow independent rescoring without repeating demographics on every trial.
+Old sessions lack these raw records and cannot be reconstructed retroactively.
+
+Reference: https://www.millisecond.com/library/v7/iat/raceiat/raceiat/raceiat.manual

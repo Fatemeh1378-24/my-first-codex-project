@@ -2,7 +2,7 @@
 <style>body{font:18px/1.9 Tahoma,Arial;background:#f3f5f8;margin:0;padding:24px}main{max-width:900px;margin:auto;background:white;border-radius:16px;padding:28px}button{font:inherit;background:#175ddc;color:white;border:0;border-radius:10px;padding:12px 24px;cursor:pointer}textarea{width:100%;height:50vh;direction:ltr;text-align:left;font:14px/1.6 monospace;margin-top:20px}</style>
 <main><h1>کد ذخیرهٔ نتایج IAT</h1><p>این کد را در فایل Code.gs پروژهٔ IAT Connection Test جایگزین کنید. فایل Google Sheets را عمومی نکنید.</p><button id="copy">کپی کد کامل</button><p id="status" role="status" aria-live="polite"></p><textarea id="code" readonly aria-label="کد کامل">// IAT storage v1. The spreadsheet stays PRIVATE. No endpoint returns results.
 const IAT_FILE_ID = &quot;1RzEr-4xNB1oVIkXj35Fn48EKWujt0enh9jwpKfmAC58&quot;;
-const IAT_FIELDS = [
+const IAT_LEGACY_FIELDS = [
   &quot;participant_id&quot;, &quot;group_number&quot;, &quot;age&quot;, &quot;gender&quot;, &quot;education_level&quot;,
   &quot;employment_status&quot;, &quot;monthly_income&quot;, &quot;religiosity&quot;,
   &quot;block_1_mean_rt&quot;, &quot;block_2_mean_rt&quot;, &quot;block_3_mean_rt&quot;, &quot;block_4_mean_rt&quot;,
@@ -13,14 +13,18 @@ const IAT_FIELDS = [
   &quot;gender_rt_difference&quot;, &quot;same_gender_advantage&quot;, &quot;sdo_responses&quot;, &quot;sdo_score&quot;,
   &quot;mfq_responses&quot;, &quot;mfq_domain_scores&quot;
 ];
+const IAT_DETAIL_FIELDS = [&quot;iat_trials&quot;, &quot;iat_quality&quot;, &quot;iat_interpretation&quot;];
+const IAT_FIELDS = IAT_LEGACY_FIELDS.concat(IAT_DETAIL_FIELDS);
 const IAT_DOMAINS = [&quot;care&quot;, &quot;equality&quot;, &quot;proportionality&quot;, &quot;loyalty&quot;, &quot;authority&quot;, &quot;purity&quot;];
 const IAT_SDO_KEYS = Array.from({length:16}, (_, i) =&gt; &quot;sdo_&quot; + String(i+1).padStart(2,&quot;0&quot;));
 const IAT_MFQ_KEYS = Array.from({length:36}, (_, i) =&gt; &quot;mfq_&quot; + String(i+1).padStart(2,&quot;0&quot;));
-const IAT_HEADERS = IAT_FIELDS.concat(IAT_SDO_KEYS, IAT_MFQ_KEYS,
+// Append new columns after the entire original layout, preserving old rows.
+const IAT_LEGACY_HEADERS = IAT_LEGACY_FIELDS.concat(IAT_SDO_KEYS, IAT_MFQ_KEYS,
   IAT_DOMAINS.map(k =&gt; &quot;mfq_&quot; + k), [&quot;received_at&quot;, &quot;payload_sha256&quot;, &quot;payload_json&quot;]);
+const IAT_HEADERS = IAT_LEGACY_HEADERS.concat(IAT_DETAIL_FIELDS);
 
 function doGet() {
-  return output_({service:&quot;iat-sheets&quot;, schema_version:1, fields:IAT_FIELDS});
+  return output_({service:&quot;iat-sheets&quot;, schema_version:1, fields:IAT_FIELDS, iat_details_version:1});
 }
 
 function output_(value) {
@@ -50,14 +54,16 @@ function exactKeys_(value, keys) {
 }
 
 function valid_(p) {
-  if (!exactKeys_(p,IAT_FIELDS)) return false;
+  // Old completed/offline submissions retain their original payload and hash.
+  if (!exactKeys_(p,IAT_LEGACY_FIELDS) &amp;&amp; !exactKeys_(p,IAT_FIELDS)) return false;
+  if (Object.prototype.hasOwnProperty.call(p,&quot;iat_trials&quot;) &amp;&amp; !validIatDetails_(p)) return false;
   if (typeof p.participant_id !== &quot;string&quot; || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(p.participant_id)) return false;
   if (![1,2].includes(p.group_number) || !Number.isInteger(p.age) || p.age&lt;20 || p.age&gt;40) return false;
   const text = [&quot;gender&quot;,&quot;education_level&quot;,&quot;employment_status&quot;,&quot;monthly_income&quot;,&quot;religiosity&quot;];
   if (!text.every(k =&gt; typeof p[k] === &quot;string&quot; &amp;&amp; p[k].length&gt;0 &amp;&amp; p[k].length&lt;=300)) return false;
   const nonNumeric = [&quot;participant_id&quot;,&quot;group_number&quot;,&quot;age&quot;,&quot;exclude_criteria_met&quot;,
     &quot;sdo_responses&quot;,&quot;mfq_responses&quot;,&quot;mfq_domain_scores&quot;].concat(text);
-  const numeric = IAT_FIELDS.filter(k =&gt; !nonNumeric.includes(k));
+  const numeric = IAT_LEGACY_FIELDS.filter(k =&gt; !nonNumeric.includes(k));
   // Uncomputable IAT scores are null in the existing browser JSON payload.
   if (!numeric.every(k =&gt; p[k]===null || typeof p[k]===&quot;number&quot; &amp;&amp; Number.isFinite(p[k]))) return false;
   if (typeof p.exclude_criteria_met !== &quot;boolean&quot;) return false;
@@ -66,6 +72,37 @@ function valid_(p) {
   return exactKeys_(p.mfq_domain_scores,IAT_DOMAINS) &amp;&amp; IAT_DOMAINS.every(k =&gt;
     typeof p.mfq_domain_scores[k]===&quot;number&quot; &amp;&amp; Number.isFinite(p.mfq_domain_scores[k])
     &amp;&amp; p.mfq_domain_scores[k]&gt;=0 &amp;&amp; p.mfq_domain_scores[k]&lt;=4);
+}
+
+function validIatDetails_(p) {
+  const trials=p.iat_trials, q=p.iat_quality, interpretation=p.iat_interpretation;
+  if (!Array.isArray(trials) || trials.length&gt;180 || !object_(q) || !object_(interpretation)) return false;
+  const trialKeys=[&quot;trial&quot;,&quot;block&quot;,&quot;category&quot;,&quot;stimulus&quot;,&quot;expected&quot;,&quot;initial&quot;,&quot;response&quot;,&quot;method&quot;,&quot;correct&quot;,&quot;first_rt&quot;,&quot;rt&quot;];
+  if (!trials.every((t,i) =&gt; exactKeys_(t,trialKeys) &amp;&amp; t.trial===i+1
+    &amp;&amp; Number.isInteger(t.block) &amp;&amp; t.block&gt;=1 &amp;&amp; t.block&lt;=7
+    &amp;&amp; [&quot;targetA&quot;,&quot;targetB&quot;,&quot;attributeA&quot;,&quot;attributeB&quot;].includes(t.category)
+    &amp;&amp; typeof t.stimulus===&quot;string&quot; &amp;&amp; t.stimulus.length&gt;0 &amp;&amp; t.stimulus.length&lt;=100
+    &amp;&amp; [&quot;left&quot;,&quot;right&quot;].includes(t.expected) &amp;&amp; [&quot;left&quot;,&quot;right&quot;].includes(t.initial)
+    &amp;&amp; t.response===t.expected &amp;&amp; [&quot;keyboard&quot;,&quot;touch&quot;].includes(t.method)
+    &amp;&amp; typeof t.correct===&quot;boolean&quot; &amp;&amp; t.correct===(t.initial===t.expected)
+    &amp;&amp; Number.isSafeInteger(t.first_rt) &amp;&amp; t.first_rt&gt;=0
+    &amp;&amp; Number.isSafeInteger(t.rt) &amp;&amp; t.rt&gt;=t.first_rt)) return false;
+  const reasons=[&quot;incomplete_test_blocks&quot;,&quot;invalid_latency&quot;,&quot;empty_scoring_cell&quot;,&quot;insufficient_scoring_trials&quot;,&quot;zero_variance&quot;,&quot;nonfinite_d_score&quot;,&quot;too_many_fast_responses&quot;];
+  if (q.scoring_version!==&quot;millisecond-corrected-rt-v1&quot; || typeof q.valid!==&quot;boolean&quot; || typeof q.excluded!==&quot;boolean&quot;
+    || !Array.isArray(q.reasons) || q.reasons.length&gt;reasons.length || !q.reasons.every(r=&gt;reasons.includes(r))
+    || q.excluded!==(q.reasons.length&gt;0) || (!q.valid &amp;&amp; !q.excluded)
+    || p.exclude_criteria_met!==q.excluded) return false;
+  if (![&quot;total_test_trials&quot;,&quot;retained_trials&quot;,&quot;slow_trials&quot;,&quot;fast_trials&quot;].every(k=&gt;Number.isInteger(q[k]) &amp;&amp; q[k]&gt;=0 &amp;&amp; q[k]&lt;=120)) return false;
+  const cells=[&quot;compatible-short&quot;,&quot;compatible-long&quot;,&quot;incompatible-short&quot;,&quot;incompatible-long&quot;];
+  if (!exactKeys_(q.cell_counts,cells) || !cells.every(k=&gt;Number.isInteger(q.cell_counts[k]) &amp;&amp; q.cell_counts[k]&gt;=0 &amp;&amp; q.cell_counts[k]&lt;=120)) return false;
+  if (!exactKeys_(interpretation,[&quot;status&quot;,&quot;direction&quot;,&quot;strength&quot;])) return false;
+  if (!q.valid || q.excluded) return interpretation.status===(q.valid?&quot;excluded&quot;:&quot;invalid&quot;)
+    &amp;&amp; interpretation.direction===null &amp;&amp; interpretation.strength===null;
+  if (![p.d_score,p.d_short,p.d_long].every(v=&gt;typeof v===&quot;number&quot; &amp;&amp; Number.isFinite(v))) return false;
+  const d=p.d_score, magnitude=Math.abs(d);
+  return interpretation.status===&quot;valid&quot;
+    &amp;&amp; interpretation.direction===(magnitude&lt;=0.15?&quot;little_to_no&quot;:d&gt;0?&quot;iranian&quot;:&quot;afghan&quot;)
+    &amp;&amp; interpretation.strength===(magnitude&gt;=0.65?&quot;strong&quot;:magnitude&gt;0.35?&quot;moderate&quot;:magnitude&gt;0.15?&quot;slight&quot;:&quot;little_to_no&quot;);
 }
 
 function cell_(value) {
@@ -80,7 +117,7 @@ function doPost(e) {
   // Browser sends URL-encoded &quot;data&quot; to avoid a cross-origin JSON preflight.
   // A readable JSON receipt, NOT an opaque no-cors response, confirms saving.
   const raw = e &amp;&amp; e.parameter &amp;&amp; e.parameter.data;
-  if (typeof raw!==&quot;string&quot; || raw.length&gt;40000) return output_({saved:false,error:&quot;invalid_request&quot;});
+  if (typeof raw!==&quot;string&quot; || raw.length&gt;200000) return output_({saved:false,error:&quot;invalid_request&quot;});
   let envelope;
   try { envelope=JSON.parse(raw); } catch (_) { return output_({saved:false,error:&quot;invalid_json&quot;}); }
   if (!exactKeys_(envelope,[&quot;schema_version&quot;,&quot;kind&quot;,&quot;payload&quot;]) || envelope.schema_version!==1
@@ -89,6 +126,8 @@ function doPost(e) {
   }
   const p=envelope.payload;
   const body=canonical_(p);
+  // Google Sheets cells have a 50,000 character limit. Never silently truncate.
+  if (body.length&gt;49000) return output_({saved:false,error:&quot;payload_too_large&quot;});
   const hash=digest_(body);
   const lock=LockService.getScriptLock();
   if (!lock.tryLock(20000)) return output_({saved:false,error:&quot;busy&quot;});
@@ -103,8 +142,14 @@ function doPost(e) {
     if (sheet.getLastRow()===0) {
       sheet.getRange(1,1,1,IAT_HEADERS.length).setValues([IAT_HEADERS]);
       sheet.setFrozenRows(1);
-    } else if (JSON.stringify(sheet.getRange(1,1,1,IAT_HEADERS.length).getValues()[0])!==JSON.stringify(IAT_HEADERS)) {
-      return output_({saved:false,error:&quot;headers_changed&quot;});
+    } else {
+      const headers=sheet.getRange(1,1,1,IAT_HEADERS.length).getValues()[0];
+      if (JSON.stringify(headers)!==JSON.stringify(IAT_HEADERS)) {
+        const legacyMatches=JSON.stringify(headers.slice(0,IAT_LEGACY_HEADERS.length))===JSON.stringify(IAT_LEGACY_HEADERS);
+        const tailEmpty=headers.slice(IAT_LEGACY_HEADERS.length).every(value=&gt;value===&quot;&quot;);
+        if (!legacyMatches || !tailEmpty) return output_({saved:false,error:&quot;headers_changed&quot;});
+        sheet.getRange(1,IAT_LEGACY_HEADERS.length+1,1,IAT_DETAIL_FIELDS.length).setValues([IAT_DETAIL_FIELDS]);
+      }
     }
     const count=sheet.getLastRow()-1;
     if (count&gt;0) {
@@ -118,9 +163,10 @@ function doPost(e) {
         return output_({saved:true,participant_id:p.participant_id,payload_sha256:hash,duplicate:true});
       }
     }
-    const row=IAT_FIELDS.map(k =&gt; cell_(p[k]))
+    const row=IAT_LEGACY_FIELDS.map(k =&gt; cell_(p[k]))
       .concat(IAT_SDO_KEYS.map(k =&gt; p.sdo_responses[k]),IAT_MFQ_KEYS.map(k =&gt; p.mfq_responses[k]),
-        IAT_DOMAINS.map(k =&gt; p.mfq_domain_scores[k]),[new Date().toISOString(),hash,body]);
+        IAT_DOMAINS.map(k =&gt; p.mfq_domain_scores[k]),[new Date().toISOString(),hash,body],
+        IAT_DETAIL_FIELDS.map(k =&gt; Object.prototype.hasOwnProperty.call(p,k) ? cell_(p[k]) : &quot;&quot;));
     const next=sheet.getLastRow()+1;
     if (next&gt;sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(),100);
     sheet.getRange(next,1,1,row.length).setValues([row]);
