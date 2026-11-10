@@ -397,6 +397,9 @@ function respond(side, method) {
   const trial = block.trials[state.trialIndex];
   const latency = Math.round(performance.now() - state.startedAt);
   const correctNow = side === trial.correct;
+  // Preserve the first response as well as the final corrected response.
+  trial.firstLatency ??= latency;
+  trial.initialResponse ??= side;
   if (!correctNow) {
     if (!state.awaitingCorrection) {
       trial.initialCorrect = false; trial.firstLatency = latency;
@@ -435,6 +438,29 @@ function sampleSd(values) {
   return Math.sqrt(values.reduce((sum, value) => sum + (value - avg) ** 2, 0) / (values.length - 1));
 }
 
+function interpretIatScore(d, quality) {
+  if (!quality.valid || quality.excluded) {
+    return { status: quality.valid ? "excluded" : "invalid", direction: null, strength: null };
+  }
+  const magnitude = Math.abs(d);
+  return {
+    status: "valid",
+    direction: magnitude <= 0.15 ? "little_to_no" : d > 0 ? "iranian" : "afghan",
+    strength: magnitude >= 0.65 ? "strong" : magnitude > 0.35 ? "moderate" : magnitude > 0.15 ? "slight" : "little_to_no"
+  };
+}
+
+function iatRawTrials(trials) {
+  // Participant identity/group live on the parent record, without duplicating
+  // demographics on every trial. Keep slow trials for independent rescoring.
+  return trials.map((t, index) => ({
+    trial: index + 1, block: t.part, category: t.category, stimulus: t.value,
+    expected: t.correct, initial: t.initialResponse, response: t.response,
+    method: t.responseMethod, correct: t.initialCorrect,
+    first_rt: t.firstLatency, rt: t.latency
+  }));
+}
+
 function calculateScores(trials = state.trials, participantGender = state.participant?.Gender_Normalized ?? "prefer_not_to_say") {
   // Millisecond's correction-required variant records latency to the final,
   // correct response. Accordingly, t.latency (not firstLatency) is scored.
@@ -445,7 +471,7 @@ function calculateScores(trials = state.trials, participantGender = state.partic
     return [`block_${part}_mean_rt`, mean(trials.filter(t => t.part === part).map(t => t.latency))];
   }));
   const testTrials = trials.filter(t => [3, 4, 6, 7].includes(t.part));
-  const eligible = testTrials.filter(t => t.latency <= 10000);
+  const eligible = testTrials.filter(t => Number.isFinite(t.latency) && t.latency >= 0 && t.latency <= 10000);
   const cells = {};
   for (const condition of ["compatible", "incompatible"]) for (const length of ["short", "long"])
     cells[`${condition}-${length}`] = eligible.filter(t => t.condition === condition && t.blockLength === length).map(t => t.latency);
@@ -455,6 +481,26 @@ function calculateScores(trials = state.trials, participantGender = state.partic
   // regardless of which condition was presented first.
   const D_short = (mean(cells["incompatible-short"]) - mean(cells["compatible-short"])) / sampleSd(shortPooled);
   const D_long = (mean(cells["incompatible-long"]) - mean(cells["compatible-long"])) / sampleSd(longPooled);
+  const D_score = (D_short + D_long) / 2;
+  const fastProportion = mean(testTrials.map(t => t.latency < 300 ? 1 : 0));
+  const reasons = [];
+  const expectedCounts = { 3: 20, 4: 40, 6: 20, 7: 40 };
+  if (Object.entries(expectedCounts).some(([part, count]) => testTrials.filter(t => t.part === Number(part)).length !== count)) reasons.push("incomplete_test_blocks");
+  if (testTrials.some(t => !Number.isFinite(t.latency) || t.latency < 0)) reasons.push("invalid_latency");
+  if (Object.values(cells).some(values => values.length === 0)) reasons.push("empty_scoring_cell");
+  if (shortPooled.length < 2 || longPooled.length < 2) reasons.push("insufficient_scoring_trials");
+  if (sampleSd(shortPooled) === 0 || sampleSd(longPooled) === 0) reasons.push("zero_variance");
+  if (![D_short, D_long, D_score].every(Number.isFinite)) reasons.push("nonfinite_d_score");
+  const valid = reasons.length === 0;
+  if (fastProportion > 0.10) reasons.push("too_many_fast_responses");
+  const quality = {
+    scoring_version: "millisecond-corrected-rt-v1",
+    valid, excluded: reasons.length > 0, reasons,
+    total_test_trials: testTrials.length, retained_trials: eligible.length,
+    slow_trials: testTrials.filter(t => t.latency > 10000).length,
+    fast_trials: testTrials.filter(t => t.latency < 300).length,
+    cell_counts: Object.fromEntries(Object.entries(cells).map(([key, values]) => [key, values.length]))
+  };
   const faceMean = (targetCategory, gender) => mean(eligible
     .filter(t => t.category === targetCategory && new RegExp(`_${gender}[0-9]+\\.jpg$`, "i").test(t.value))
     .map(t => t.latency));
@@ -469,10 +515,14 @@ function calculateScores(trials = state.trials, participantGender = state.partic
     : participantGender === "male" ? -Gender_RT_Difference : null;
   return {
     ...blockMeanRts,
-    D_score: (D_short + D_long) / 2, D_short, D_long,
+    D_score: Number.isFinite(D_score) ? D_score : null,
+    D_short: Number.isFinite(D_short) ? D_short : null,
+    D_long: Number.isFinite(D_long) ? D_long : null,
     percentCorrect: mean(eligible.map(t => t.initialCorrect ? 1 : 0)) * 100,
-    propRT300: mean(testTrials.map(t => t.latency < 300 ? 1 : 0)),
-    excludeCriteriaMet: mean(testTrials.map(t => t.latency < 300 ? 1 : 0)) > 0.10,
+    propRT300: fastProportion,
+    excludeCriteriaMet: quality.excluded,
+    iat_quality: quality,
+    iat_interpretation: interpretIatScore(D_score, quality),
     Mean_RT_Iranian_Female, Mean_RT_Iranian_Male,
     Mean_RT_Afghan_Female, Mean_RT_Afghan_Male,
     Mean_RT_Female_Faces, Mean_RT_Male_Faces,
@@ -514,7 +564,10 @@ function participantInsertPayload(scores) {
     sdo_responses: state.sdoResponses,
     sdo_score: state.sdoScore ?? null,
     mfq_responses: state.mfqResponses,
-    mfq_domain_scores: state.mfqDomainScores
+    mfq_domain_scores: state.mfqDomainScores,
+    iat_trials: iatRawTrials(state.trials),
+    iat_quality: scores.iat_quality,
+    iat_interpretation: scores.iat_interpretation
   };
 }
 

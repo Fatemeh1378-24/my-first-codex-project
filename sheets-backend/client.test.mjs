@@ -21,7 +21,7 @@ test('browser and real backend agree on payload digest and save all 33 fields',a
  const server=runtime(),storage=store(),browser=client(storage,network(server));
  const receipt=await browser.send(fixture);assert.equal(receipt.saved,true);
  assert.equal(server.sheets.get('Results').rows.length,2);assert.equal(storage.length,0);
- assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1].at(-1)),fixture);
+ assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1][server.sheets.get('Results').rows[0].indexOf('payload_json')]),fixture);
 });
 test('a lost receipt survives reload; retry uses the same immutable payload and creates no duplicate',async()=>{
  const server=runtime(),storage=store();let lose=true;
@@ -30,7 +30,7 @@ test('a lost receipt survives reload; retry uses the same immutable payload and 
  const reloaded=client(storage,fetcher);assert.equal(reloaded.pending().length,1);
  const receipt=await reloaded.send({...fixture,d_score:9});assert.equal(receipt.duplicate,true);
  assert.equal(server.sheets.get('Results').rows.length,2);
- assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1].at(-1)),fixture);
+ assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1][server.sheets.get('Results').rows[0].indexOf('payload_json')]),fixture);
  assert.equal(reloaded.pending().length,0);
 });
 test('a mismatched hash, HTML login page, or backend rejection never removes pending results',async()=>{
@@ -74,6 +74,10 @@ test('the actual MFQ completion flow sends all fields to Sheets and exposes no s
  const map=app.split('function participantInsertPayload(scores) {')[1].split('\n}')[0];
  const scores=Object.fromEntries([...map.matchAll(/([a-z_0-9]+): scores\.([A-Za-z_0-9]+)/g)].map(([,column,key])=>[key,fixture[column]]));
  vm.runInContext(`state.scores=${JSON.stringify(scores)};
+  const empty=calculateScores([]);
+  state.scores.iat_quality=empty.iat_quality;
+  state.scores.iat_interpretation=empty.iat_interpretation;
+  state.scores.excludeCriteriaMet=true;
   state.sdoResponses=${JSON.stringify(fixture.sdo_responses)};state.sdoScore=3;
   el['mfq-questionnaire'].hidden=false;
   submitMfq({preventDefault(){},currentTarget:el['mfq-form']});`,study.ctx);
@@ -81,7 +85,10 @@ test('the actual MFQ completion flow sends all fields to Sheets and exposes no s
  await vm.runInContext('saveParticipantResults(state.scores)',study.ctx);
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(server.sheets.get('Results').rows.length,2);
- assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1].at(-1)),fixture);
+ const actual=JSON.parse(server.sheets.get('Results').rows[1][server.sheets.get('Results').rows[0].indexOf('payload_json')]);
+ const expected=JSON.parse(vm.runInContext('JSON.stringify(participantInsertPayload(state.scores))',study.ctx));
+ assert.deepEqual(actual,expected);
+ for(const key of Object.keys(fixture).filter(k=>k!=='exclude_criteria_met')) assert.deepEqual(actual[key],fixture[key],key);
  assert.equal(study.node('completion-message').hidden,false);
  assert.equal(study.node('save-result').hidden,true);
  assert.equal(storage.length,0);
@@ -102,5 +109,5 @@ test('the actual app restores a completed offline submission after reload and wa
  assert.equal(recovered.node('completion-message').hidden,false);
  assert.equal(recovered.node('save-result').hidden,true);
  assert.equal(storage.length,0);
- assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1].at(-1)),fixture);
+ assert.deepEqual(JSON.parse(server.sheets.get('Results').rows[1][server.sheets.get('Results').rows[0].indexOf('payload_json')]),fixture);
 });

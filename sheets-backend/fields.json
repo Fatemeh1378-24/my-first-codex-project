@@ -31,5 +31,8 @@
   "sdo_responses",
   "sdo_score",
   "mfq_responses",
-  "mfq_domain_scores"
+  "mfq_domain_scores",
+  "iat_trials",
+  "iat_quality",
+  "iat_interpretation"
 ]

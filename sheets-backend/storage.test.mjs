@@ -20,6 +20,7 @@ state.mfqResponses=Object.fromEntries(Array.from({length:36},(_,i)=>['mfq_'+Stri
 state.mfqDomainScores={care:2,equality:2,proportionality:2,loyalty:2,authority:2,purity:2};
 `,ui);
 const p=JSON.parse(JSON.stringify(ui.makePayload()));
+for (const key of ["iat_trials","iat_quality","iat_interpretation"]) delete p[key];
 Object.assign(p,{mean_rt_female_faces:520,mean_rt_male_faces:590,gender_rt_difference:70,
  d_short:0.25,d_long:0.55,d_score:0.4});
 
@@ -49,14 +50,14 @@ export function runtime(){
  return {ctx,sheets,lock,send};
 }
 
-test('backend field names exactly match all 33 existing Supabase payload fields',()=>{
- const r=runtime();assert.deepEqual([...r.ctx.fields],fields);assert.equal(fields.length,33);
+test('backend field names exactly match the original fields plus three IAT detail fields',()=>{
+ const r=runtime();assert.deepEqual([...r.ctx.fields],fields);assert.equal(fields.length,36);
 });
 test('all scores, demographics and 52 raw questionnaire answers are preserved and readable',()=>{
  const r=runtime();const result=r.send();assert.equal(result.saved,true);
  const sheet=r.sheets.get('Results');assert.equal(sheet.rows.length,2);
- const headers=sheet.rows[0],row=sheet.rows[1];assert.equal(headers.length,94);
- for(const field of fields){const cell=row[headers.indexOf(field)];
+ const headers=sheet.rows[0],row=sheet.rows[1];assert.equal(headers.length,97);
+ for(const field of Object.keys(p)){const cell=row[headers.indexOf(field)];
    if(p[field]===null)assert.equal(cell,'');
    else if(typeof p[field]==='object')assert.deepEqual(JSON.parse(cell),p[field]);
    else assert.equal(cell,p[field],field);
@@ -93,7 +94,7 @@ test('synthetic probes are stored separately; GET never returns participant resu
 test('edited headers fail closed and formula-like input stays text with original preserved in JSON',()=>{
  const r=runtime();const formula={...p,education_level:'=1+1'};assert.equal(r.send(formula).saved,true);
  const sheet=r.sheets.get('Results');assert.equal(sheet.rows[1][4],'\u200b=1+1');
- assert.equal(JSON.parse(sheet.rows[1].at(-1)).education_level,'=1+1');
+ assert.equal(JSON.parse(sheet.rows[1][sheet.rows[0].indexOf('payload_json')]).education_level,'=1+1');
  sheet.rows[0][0]='changed';assert.equal(r.send().error,'headers_changed');
 });
 test('a failed readback is not acknowledged and an exact retry resolves a lost receipt',()=>{

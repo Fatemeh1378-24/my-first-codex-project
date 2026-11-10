@@ -28,14 +28,40 @@ simple form POSTs from GitHub to Apps Script; the complete 33-field synthetic pa
 
 ## Field preservation
 
-`fields.json` lists the **33 fields sent by the existing browser payload**,
-extracted directly from participantInsertPayload in app.js. Code.gs accepts
-exactly those fields, preserves their names and values, and adds separate columns
-for 16 SDO raw responses, 36 MFQ raw responses, six MFQ domains, receipt time,
-digest and the original JSON. Total: 94 columns. Null uncomputable IAT scores
-stay null in payload_json and appear blank in their spreadsheet cells. Scores
-are not recomputed or changed by the backend. Formula-like strings are kept as
-text with a zero-width prefix in individual cells and exactly in payload_json.
+`fields.json` lists the 36 fields sent by the browser: all 33 original fields
+plus `iat_trials`, `iat_quality`, and `iat_interpretation`. The new backend also
+accepts exact legacy 33-field payloads, including pending offline submissions,
+without changing their JSON or digest. It appends three columns **after** the
+original 94 columns, for 97 total. Existing values, header positions, JSON and
+receipts stay intact; old rows have no new IAT details. Modified or unexpected
+headers still fail closed. Questionnaires and existing score fields are retained.
+
+All 180 raw IAT trials (including training and >10s trials) are stored as JSON in
+`iat_trials` and included in `payload_json`; see `../SCORING.md` for the data
+dictionary. Quality/exclusion reasons and Millisecond interpretation are stored
+in their own JSON columns. Nonfinite scores are JSON nulls and have explicit
+invalid/exclusion metadata. A request over 200,000 characters or canonical
+payload over 49,000 characters is rejected without writing or truncation, keeping
+below the Sheets 50,000-character cell limit.
+
+### Upgrade order (required before publishing the new browser)
+
+1. Replace Apps Script `Code.gs` with this directory's tested `Code.gs` and
+   update the existing deployment (Manage deployments → edit → New version →
+   Deploy), keeping its current URL, Execute as Me, and access Anyone.
+   `web-preview/setup-storage.html` contains the exact same copyable code; use
+   the **new branch's version** before the website deployment, not the old live
+   setup page. The Sheet remains private.
+2. GET the existing endpoint and confirm `iat_details_version: 1` and the three
+   new field names. Do not publish the new browser against the old backend:
+   the old exact-schema validator rejects the new payload.
+3. Publish the browser only after this capability is confirmed. Run the complete
+   storage probe and a full synthetic IAT, then inspect all three new columns
+   in the owner's private sheet. Keep synthetic data out of participant Results
+   by using the dedicated `probe` kind / StorageChecks tab.
+4. Header extension is automatic on the first write under ScriptLock; no manual
+   column insertion, deletion or rewriting of previous participant data is needed.
+   Historical raw IAT trials were never stored and cannot be backfilled.
 
 The live Supabase table schema has **not** been independently inspected. Before
 calling the migration complete, reconcile its actual columns against this list.
@@ -79,8 +105,21 @@ From repository root:
 node sheets-backend/client.test.mjs
 ```
 
-15 checks exercise actual backend/client code with mocked Sheets services,
+The client checks exercise actual backend/client code with mocked Sheets services,
 including all fields, gender RT difference, final IAT score, 52 raw answers,
 digest agreement, duplicate retries, conflicts, lost acknowledgements, quota
 errors, header changes, private GET responses and local-storage failure. The additional application tests cover MFQ completion and reload recovery. They
 do not substitute for the live acceptance checks above.
+
+Additional output regression checks:
+
+```sh
+node web-preview/verify-preview.mjs
+node web-preview/iat-output.test.mjs
+```
+
+These exercise raw-trial roundtrips and independent rescoring, unchanged valid D
+in both orders, interpretation boundaries, invalid-data exclusion, retained
+10,000 ms trials, legacy header upgrades and retry receipts, and embedded backend
+code parity. The full Chromium smoke test uses a mocked acknowledgement and
+never submits synthetic participants to the live Results sheet.
