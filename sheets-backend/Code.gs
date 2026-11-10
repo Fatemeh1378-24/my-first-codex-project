@@ -19,10 +19,12 @@ const IAT_MFQ_KEYS = Array.from({length:36}, (_, i) => "mfq_" + String(i+1).padS
 // Append new columns after the entire original layout, preserving old rows.
 const IAT_LEGACY_HEADERS = IAT_LEGACY_FIELDS.concat(IAT_SDO_KEYS, IAT_MFQ_KEYS,
   IAT_DOMAINS.map(k => "mfq_" + k), ["received_at", "payload_sha256", "payload_json"]);
-const IAT_HEADERS = IAT_LEGACY_HEADERS.concat(IAT_DETAIL_FIELDS);
+const IAT_DETAILS_HEADERS = IAT_LEGACY_HEADERS.concat(IAT_DETAIL_FIELDS);
+const IAT_NATIONALITY_HEADERS = ["mean_rt_iranian_faces", "mean_rt_afghan_faces", "nationality_rt_difference"];
+const IAT_HEADERS = IAT_DETAILS_HEADERS.concat(IAT_NATIONALITY_HEADERS);
 
 function doGet() {
-  return output_({service:"iat-sheets", schema_version:1, fields:IAT_FIELDS, iat_details_version:1});
+  return output_({service:"iat-sheets", schema_version:1, fields:IAT_FIELDS, iat_details_version:1, nationality_means_version:1});
 }
 
 function output_(value) {
@@ -111,6 +113,20 @@ function cell_(value) {
   return value;
 }
 
+function nationalityFaceMeans_(p) {
+  // Use each retained face trial directly, regardless of depicted gender.
+  // No raw IAT in old 33-field records: leave these columns blank.
+  const totals={targetA:{sum:0,count:0},targetB:{sum:0,count:0}};
+  for (const t of p.iat_trials || []) {
+    if (![3,4,6,7].includes(t.block) || !Number.isFinite(t.rt) || t.rt<0 || t.rt>10000) continue;
+    const group=totals[t.category];
+    if (group) {group.sum+=t.rt;group.count++;}
+  }
+  const iranian=totals.targetA.count ? totals.targetA.sum/totals.targetA.count : null;
+  const afghan=totals.targetB.count ? totals.targetB.sum/totals.targetB.count : null;
+  return [iranian,afghan,iranian===null || afghan===null ? null : afghan-iranian];
+}
+
 function doPost(e) {
   // Browser sends URL-encoded "data" to avoid a cross-origin JSON preflight.
   // A readable JSON receipt, NOT an opaque no-cors response, confirms saving.
@@ -143,10 +159,12 @@ function doPost(e) {
     } else {
       const headers=sheet.getRange(1,1,1,IAT_HEADERS.length).getValues()[0];
       if (JSON.stringify(headers)!==JSON.stringify(IAT_HEADERS)) {
-        const legacyMatches=JSON.stringify(headers.slice(0,IAT_LEGACY_HEADERS.length))===JSON.stringify(IAT_LEGACY_HEADERS);
-        const tailEmpty=headers.slice(IAT_LEGACY_HEADERS.length).every(value=>value==="");
-        if (!legacyMatches || !tailEmpty) return output_({saved:false,error:"headers_changed"});
-        sheet.getRange(1,IAT_LEGACY_HEADERS.length+1,1,IAT_DETAIL_FIELDS.length).setValues([IAT_DETAIL_FIELDS]);
+        const previous=[IAT_LEGACY_HEADERS,IAT_DETAILS_HEADERS].find(prefix =>
+          JSON.stringify(headers.slice(0,prefix.length))===JSON.stringify(prefix)
+          && headers.slice(prefix.length).every(value=>value===""));
+        if (!previous) return output_({saved:false,error:"headers_changed"});
+        const appended=IAT_HEADERS.slice(previous.length);
+        sheet.getRange(1,previous.length+1,1,appended.length).setValues([appended]);
       }
     }
     const count=sheet.getLastRow()-1;
@@ -164,7 +182,8 @@ function doPost(e) {
     const row=IAT_LEGACY_FIELDS.map(k => cell_(p[k]))
       .concat(IAT_SDO_KEYS.map(k => p.sdo_responses[k]),IAT_MFQ_KEYS.map(k => p.mfq_responses[k]),
         IAT_DOMAINS.map(k => p.mfq_domain_scores[k]),[new Date().toISOString(),hash,body],
-        IAT_DETAIL_FIELDS.map(k => Object.prototype.hasOwnProperty.call(p,k) ? cell_(p[k]) : ""));
+        IAT_DETAIL_FIELDS.map(k => Object.prototype.hasOwnProperty.call(p,k) ? cell_(p[k]) : ""),
+        nationalityFaceMeans_(p).map(cell_));
     const next=sheet.getLastRow()+1;
     if (next>sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(),100);
     sheet.getRange(next,1,1,row.length).setValues([row]);

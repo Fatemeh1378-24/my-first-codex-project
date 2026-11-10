@@ -56,7 +56,7 @@ test('backend field names exactly match the original fields plus three IAT detai
 test('all scores, demographics and 52 raw questionnaire answers are preserved and readable',()=>{
  const r=runtime();const result=r.send();assert.equal(result.saved,true);
  const sheet=r.sheets.get('Results');assert.equal(sheet.rows.length,2);
- const headers=sheet.rows[0],row=sheet.rows[1];assert.equal(headers.length,97);
+ const headers=sheet.rows[0],row=sheet.rows[1];assert.equal(headers.length,100);
  for(const field of Object.keys(p)){const cell=row[headers.indexOf(field)];
    if(p[field]===null)assert.equal(cell,'');
    else if(typeof p[field]==='object')assert.deepEqual(JSON.parse(cell),p[field]);

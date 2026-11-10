@@ -31,8 +31,8 @@ simple form POSTs from GitHub to Apps Script; the complete 33-field synthetic pa
 `fields.json` lists the 36 fields sent by the browser: all 33 original fields
 plus `iat_trials`, `iat_quality`, and `iat_interpretation`. The new backend also
 accepts exact legacy 33-field payloads, including pending offline submissions,
-without changing their JSON or digest. It appends three columns **after** the
-original 94 columns, for 97 total. Existing values, header positions, JSON and
+without changing their JSON or digest. The three IAT detail columns follow the original 94 columns. Three derived
+nationality RT columns now follow those, for 100 total. Existing values, header positions, JSON and
 receipts stay intact; old rows have no new IAT details. Modified or unexpected
 headers still fail closed. Questionnaires and existing score fields are retained.
 
@@ -123,3 +123,19 @@ in both orders, interpretation boundaries, invalid-data exclusion, retained
 10,000 ms trials, legacy header upgrades and retry receipts, and embedded backend
 code parity. The full Chromium smoke test uses a mocked acknowledgement and
 never submits synthetic participants to the live Results sheet.
+
+## Nationality RT means upgrade
+
+Deploy the updated `Code.gs` to the **existing** Apps Script deployment. No
+browser change or new input fields are required. GET then also reports
+`nationality_means_version: 1`. On the first new write, three numeric columns
+are appended after the 97-column layout (100 total): `mean_rt_iranian_faces`,
+`mean_rt_afghan_faces`, `nationality_rt_difference`. A direct upgrade from the
+original 94-column layout is also supported. Existing row values, payload JSON,
+hashes and duplicate receipts are preserved. No automatic backfill runs.
+
+Means are calculated directly from all retained face trials per nationality,
+without a gender split. The final difference is Afghan minus Iranian, in ms.
+The same combined-block and <=10,000ms inclusion rules apply. Legacy records
+without raw IAT trials have blank derived columns; they are not estimated from
+the four gender-specific means. See SCORING.md for the complete definition.

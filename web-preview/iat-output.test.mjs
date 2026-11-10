@@ -128,7 +128,7 @@ test('upgrading a legacy sheet appends headers without altering old values, JSON
   const before=JSON.stringify(sheet.rows[1]),hash=sheet.rows[1][92];
   assert.equal(server.send(payload()).saved,true);
   assert.equal(JSON.stringify(sheet.rows[1]),before);
-  assert.equal(sheet.rows[0].length,97);
+  assert.equal(sheet.rows[0].length,100);
   const retry=server.send(old);
   assert.equal(retry.duplicate,true);assert.equal(retry.payload_sha256,hash);
   assert.equal(sheet.rows.length,3);
@@ -150,4 +150,65 @@ test('the copyable Apps Script exactly matches the tested backend',()=>{
   const embedded=setup.match(/<textarea[^>]*>([\s\S]*?)<\/textarea>/)[1]
     .replaceAll('&quot;','"').replaceAll('&#x27;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>').replaceAll('&amp;','&');
   assert.equal(embedded,fs.readFileSync(new URL('../sheets-backend/Code.gs',import.meta.url),'utf8'));
+});
+
+test('nationality columns use every eligible face trial directly and preserve original payload/receipts',()=>{
+  const ts=trials();
+  // A deliberately unbalanced mix verifies that no average of gender means is used.
+  for(const t of ts.filter(t=>[3,4,6,7].includes(t.part)&&t.category==='targetA')) {
+    t.value='Iranian_F1.jpg';t.latency=500;t.firstLatency=300;
+  }
+  const iranian=ts.filter(t=>[3,4,6,7].includes(t.part)&&t.category==='targetA');
+  iranian[0].value='Iranian_M1.jpg';iranian[0].latency=900;
+  const afghan=ts.filter(t=>[3,4,6,7].includes(t.part)&&t.category==='targetB');
+  afghan.forEach(t=>{t.latency=700;t.firstLatency=300;});
+  afghan[0].latency=10001;afghan[1].latency=10000;
+  const p=payload(ts),server=runtime();
+  const expectedA=iranian.reduce((s,t)=>s+t.latency,0)/iranian.length;
+  const retainedB=afghan.filter(t=>t.latency<=10000);
+  const expectedB=retainedB.reduce((s,t)=>s+t.latency,0)/retainedB.length;
+  const receipt=server.send(p);assert.equal(receipt.saved,true);
+  const sheet=server.sheets.get('Results'),headers=sheet.rows[0],row=sheet.rows[1];
+  assert.equal(headers.length,100);
+  assert.equal(row[headers.indexOf('mean_rt_iranian_faces')],expectedA);
+  assert.equal(row[headers.indexOf('mean_rt_afghan_faces')],expectedB);
+  assert.equal(row[headers.indexOf('nationality_rt_difference')],expectedB-expectedA);
+  assert.notEqual(expectedA,(500+900)/2);
+  assert.deepEqual(JSON.parse(row[headers.indexOf('payload_json')]),p);
+  assert.equal(server.send(p).payload_sha256,receipt.payload_sha256);
+  assert.equal(server.send(p).duplicate,true);
+});
+
+test('negative differences, corrected latencies, and absent nationality data are handled explicitly',()=>{
+  const server=runtime();
+  const calc=t=>plain(server.ctx.nationalityFaceMeans_({iat_trials:t}));
+  assert.deepEqual(calc([
+    {block:3,category:'targetA',rt:800,first_rt:100},
+    {block:4,category:'targetA',rt:600},
+    {block:6,category:'targetB',rt:500},
+    {block:7,category:'targetB',rt:300},
+    {block:1,category:'targetA',rt:9000},
+    {block:3,category:'attributeA',rt:9000},
+    {block:6,category:'targetB',rt:10001}
+  ]),[700,400,-300]);
+  assert.deepEqual(calc([{block:3,category:'targetA',rt:800}]),[800,null,null]);
+  assert.deepEqual(calc([]),[null,null,null]);
+  assert.deepEqual(plain(server.ctx.nationalityFaceMeans_({})),[null,null,null]);
+});
+
+test('97-column sheets upgrade without touching old records or breaking their duplicate receipts',()=>{
+  const server=runtime(),old=payload();assert.equal(server.send(old).saved,true);
+  const sheet=server.sheets.get('Results');
+  sheet.rows[0].splice(97);sheet.rows[1].splice(97);
+  const before=JSON.stringify(sheet.rows[1]);
+  assert.equal(server.send(old).duplicate,true);
+  assert.equal(JSON.stringify(sheet.rows[1]),before);
+  assert.equal(sheet.rows[0].length,100);
+  assert.deepEqual(sheet.rows[0].slice(97),['mean_rt_iranian_faces','mean_rt_afghan_faces','nationality_rt_difference']);
+  assert.equal(server.send(payload()).saved,true);
+  assert.equal(JSON.stringify(sheet.rows[1]),before);
+  assert.equal(typeof sheet.rows[2][97],'number');
+  assert.equal(typeof sheet.rows[2][98],'number');
+  assert.equal(sheet.rows[2][99],sheet.rows[2][98]-sheet.rows[2][97]);
+  assert.equal(JSON.parse(server.ctx.doGet().body).nationality_means_version,1);
 });
